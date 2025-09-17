@@ -13,21 +13,6 @@ function App() {
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setUser({ username: 'admin' });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      fetchBatches();
-      fetchCustomers();
-      fetchSales();
-    }
-  }, [user, fetchBatches, fetchCustomers, fetchSales]);
-
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const fetchBatches = useCallback(async () => {
@@ -59,6 +44,21 @@ function App() {
       console.error('Error fetching sales:', error);
     }
   }, [apiUrl]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setUser({ username: 'admin' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchBatches();
+      fetchCustomers();
+      fetchSales();
+    }
+  }, [user, fetchBatches, fetchCustomers, fetchSales]);
 
   const handleLogin = (userData) => {
     setUser(userData);
