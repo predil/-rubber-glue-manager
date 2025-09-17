@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./database');
+const db = require('./postgres-db');
 const { initializeSampleData } = require('./init-data');
 
 // Initialize sample data on startup
@@ -53,12 +53,13 @@ app.post('/api/batches', (req, res) => {
   const { latex_quantity, glue_separated, production_date, cost_to_prepare, selling_price_per_kg, notes } = req.body;
   
   db.run(
-    'INSERT INTO batches (latex_quantity, glue_separated, production_date, cost_to_prepare, selling_price_per_kg, notes) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO batches (latex_quantity, glue_separated, production_date, cost_to_prepare, selling_price_per_kg, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
     [latex_quantity, glue_separated, production_date, cost_to_prepare, selling_price_per_kg, notes || ''],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       
-      db.get('SELECT * FROM batches WHERE id = ?', [this.lastID], (err, row) => {
+      const batchId = this.lastID;
+      db.get('SELECT * FROM batches WHERE id = $1', [batchId], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(row);
       });
@@ -70,7 +71,7 @@ app.put('/api/batches/:id', (req, res) => {
   const { latex_quantity, glue_separated, production_date, cost_to_prepare, selling_price_per_kg, notes } = req.body;
   
   db.run(
-    'UPDATE batches SET latex_quantity=?, glue_separated=?, production_date=?, cost_to_prepare=?, selling_price_per_kg=?, notes=? WHERE id=?',
+    'UPDATE batches SET latex_quantity=$1, glue_separated=$2, production_date=$3, cost_to_prepare=$4, selling_price_per_kg=$5, notes=$6 WHERE id=$7',
     [latex_quantity, glue_separated, production_date, cost_to_prepare, selling_price_per_kg, notes || '', req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -80,7 +81,7 @@ app.put('/api/batches/:id', (req, res) => {
 });
 
 app.delete('/api/batches/:id', (req, res) => {
-  db.run('DELETE FROM batches WHERE id = ?', [req.params.id], function(err) {
+  db.run('DELETE FROM batches WHERE id = $1', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Batch deleted successfully' });
   });
@@ -97,10 +98,11 @@ app.get('/api/customers', (req, res) => {
 app.post('/api/customers', (req, res) => {
   const { name, contact_info } = req.body;
   
-  db.run('INSERT INTO customers (name, contact_info) VALUES (?, ?)', [name, contact_info || ''], function(err) {
+  db.run('INSERT INTO customers (name, contact_info) VALUES ($1, $2) RETURNING id', [name, contact_info || ''], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     
-    db.get('SELECT * FROM customers WHERE id = ?', [this.lastID], (err, row) => {
+    const customerId = this.lastID;
+    db.get('SELECT * FROM customers WHERE id = $1', [customerId], (err, row) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(row);
     });
@@ -128,7 +130,7 @@ app.post('/api/sales', (req, res) => {
   const total_amount = quantity_sold * price_per_kg;
   
   db.run(
-    'INSERT INTO sales (batch_id, customer_id, quantity_sold, price_per_kg, sale_date, total_amount) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO sales (batch_id, customer_id, quantity_sold, price_per_kg, sale_date, total_amount) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
     [batch_id, customer_id, quantity_sold, price_per_kg, sale_date, total_amount],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
