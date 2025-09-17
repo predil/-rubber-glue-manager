@@ -75,12 +75,7 @@ function BatchManager({ batches, onUpdate }) {
     setShowForm(false);
   };
 
-  const calculateProfit = (batch) => {
-    const totalSold = batch.total_sold || 0;
-    const revenue = totalSold * batch.selling_price_per_kg;
-    const cost = (batch.cost_to_prepare * totalSold) / batch.glue_separated;
-    return revenue - cost;
-  };
+
 
   return (
     <div className="section">

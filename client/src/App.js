@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import Login from './components/Login';
 import BatchManager from './components/BatchManager';
@@ -18,16 +18,19 @@ function App() {
     if (token) {
       setUser({ username: 'admin' });
     }
+  }, []);
+
+  useEffect(() => {
     if (user) {
       fetchBatches();
       fetchCustomers();
       fetchSales();
     }
-  }, [user]);
+  }, [user, fetchBatches, fetchCustomers, fetchSales]);
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-  const fetchBatches = async () => {
+  const fetchBatches = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/batches`);
       const data = await response.json();
@@ -35,9 +38,9 @@ function App() {
     } catch (error) {
       console.error('Error fetching batches:', error);
     }
-  };
+  }, [apiUrl]);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/customers`);
       const data = await response.json();
@@ -45,9 +48,9 @@ function App() {
     } catch (error) {
       console.error('Error fetching customers:', error);
     }
-  };
+  }, [apiUrl]);
 
-  const fetchSales = async () => {
+  const fetchSales = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/sales`);
       const data = await response.json();
@@ -55,7 +58,7 @@ function App() {
     } catch (error) {
       console.error('Error fetching sales:', error);
     }
-  };
+  }, [apiUrl]);
 
   const handleLogin = (userData) => {
     setUser(userData);
