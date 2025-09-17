@@ -11,7 +11,7 @@ function CustomerManager({ customers, onUpdate }) {
     e.preventDefault();
     
     try {
-      await fetch('http://localhost:5000/api/customers', {
+      await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/customers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

@@ -33,9 +33,10 @@ function Analytics({ batches, sales }) {
 
   const fetchAnalytics = async () => {
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const [summaryRes, monthlyRes] = await Promise.all([
-        fetch('http://localhost:5000/api/analytics/summary'),
-        fetch('http://localhost:5000/api/analytics/monthly')
+        fetch(`${apiUrl}/api/analytics/summary`),
+        fetch(`${apiUrl}/api/analytics/monthly`)
       ]);
       
       const summaryData = await summaryRes.json();
