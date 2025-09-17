@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./database');
+const { initializeSampleData } = require('./init-data');
+
+// Initialize sample data on startup
+setTimeout(initializeSampleData, 1000);
 
 const app = express();
 const PORT = 5000;
