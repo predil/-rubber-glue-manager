@@ -10,18 +10,33 @@ function CustomerManager({ customers, onUpdate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('Submitting customer:', formData);
+    
     try {
-      await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/customers`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      console.log('API URL:', apiUrl);
+      
+      const response = await fetch(`${apiUrl}/api/customers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Customer saved:', result);
       
       setFormData({ name: '', contact_info: '' });
       setShowForm(false);
       onUpdate();
     } catch (error) {
       console.error('Error saving customer:', error);
+      alert('Failed to save customer: ' + error.message);
     }
   };
 
