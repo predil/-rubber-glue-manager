@@ -88,6 +88,14 @@ function BasicAnalytics({ batches, sales }) {
             </div>
             <div className="stat-label">Return Rate</div>
           </div>
+          
+          <div className="stat-card">
+            <div className="stat-value">
+              {batches && batches.length > 0 ? 
+                (batches.reduce((sum, b) => sum + (parseFloat(b.glue_separated) / parseFloat(b.latex_quantity) * 100), 0) / batches.length).toFixed(1) : 0}%
+            </div>
+            <div className="stat-label">Avg Production Rate</div>
+          </div>
         </div>
       </div>
 
@@ -100,22 +108,35 @@ function BasicAnalytics({ batches, sales }) {
               <th>Date</th>
               <th>Latex (kg)</th>
               <th>Glue (kg)</th>
+              <th>Rate (%)</th>
               <th>Cost (LKR)</th>
             </tr>
           </thead>
           <tbody>
             {batches && batches.length > 0 ? (
-              batches.slice(0, 5).map(batch => (
-                <tr key={batch.id}>
-                  <td>#{batch.batch_number}</td>
-                  <td>{batch.production_date}</td>
-                  <td>{batch.latex_quantity}</td>
-                  <td>{batch.glue_separated}</td>
-                  <td className="currency">{parseFloat(batch.cost_to_prepare).toLocaleString()}</td>
-                </tr>
-              ))
+              batches.slice(0, 5).map(batch => {
+                const productionRate = (batch.glue_separated / batch.latex_quantity * 100).toFixed(1);
+                const avgRate = batches.reduce((sum, b) => sum + (b.glue_separated / b.latex_quantity * 100), 0) / batches.length;
+                const isLow = parseFloat(productionRate) < avgRate * 0.9;
+                
+                return (
+                  <tr key={batch.id}>
+                    <td>#{batch.batch_number}</td>
+                    <td>{batch.production_date}</td>
+                    <td>{batch.latex_quantity}</td>
+                    <td>{batch.glue_separated}</td>
+                    <td style={{ 
+                      color: isLow ? '#dc3545' : '#28a745',
+                      fontWeight: 'bold'
+                    }}>
+                      {productionRate}%
+                    </td>
+                    <td className="currency">{parseFloat(batch.cost_to_prepare).toLocaleString()}</td>
+                  </tr>
+                );
+              })
             ) : (
-              <tr><td colSpan="5">No batches available</td></tr>
+              <tr><td colSpan="6">No batches available</td></tr>
             )}
           </tbody>
         </table>
