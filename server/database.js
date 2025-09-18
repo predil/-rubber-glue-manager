@@ -135,6 +135,24 @@ db.serialize(() => {
     }
   });
 
+  // Insert default monthly costs if not exists
+  db.get('SELECT COUNT(*) as count FROM monthly_costs', (err, row) => {
+    if (!err && row.count === 0) {
+      const currentMonth = new Date().toISOString().substring(0, 7);
+      db.run(`INSERT INTO monthly_costs (month_year, labour_cost, other_costs) 
+              VALUES (?, ?, ?)`, [currentMonth, 45000, 5000]);
+    }
+  });
+
+  // Insert default transport data if not exists
+  db.get('SELECT COUNT(*) as count FROM latex_transport', (err, row) => {
+    if (!err && row.count === 0) {
+      const today = new Date().toISOString().split('T')[0];
+      db.run(`INSERT INTO latex_transport (transport_date, total_cans, total_latex_kg, transport_cost, cost_per_kg, notes) 
+              VALUES (?, ?, ?, ?, ?, ?)`, [today, 12, 240, 2400, 10, 'Default transport data']);
+    }
+  });
+
   // Create trigger to auto-increment batch_number
   db.run(`CREATE TRIGGER IF NOT EXISTS auto_batch_number 
     AFTER INSERT ON batches 
