@@ -1,17 +1,12 @@
 {
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
-    {
-      "source": "/((?!api/.*).*)",
-      "destination": "/client/build/index.html"
-    },
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/client/build/index.html"
     }
   ],
   "buildCommand": "cd client && npm install && npm run build",
