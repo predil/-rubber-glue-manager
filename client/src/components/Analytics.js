@@ -31,6 +31,16 @@ function Analytics({ batches, sales }) {
     fetchAnalytics();
   }, []);
 
+  // Fallback when charts don't load
+  const [chartsLoaded, setChartsLoaded] = useState(true);
+  
+  useEffect(() => {
+    // Check if Chart.js is available
+    if (typeof window !== 'undefined' && !window.Chart) {
+      setChartsLoaded(false);
+    }
+  }, []);
+
   const fetchAnalytics = async () => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -170,16 +180,43 @@ function Analytics({ batches, sales }) {
 
       <div className="section">
         <div className="section-title">📈 Production Trends</div>
-        <div className="chart-container">
-          <Bar data={productionChartData} options={chartOptions} />
-        </div>
+        {chartsLoaded ? (
+          <div className="chart-container">
+            <Bar data={productionChartData} options={chartOptions} />
+          </div>
+        ) : (
+          <div className="mobile-chart-fallback">
+            <p>📊 Chart view not available on this device</p>
+            <table className="table">
+              <thead>
+                <tr><th>Month</th><th>Latex Used (kg)</th><th>Glue Produced (kg)</th></tr>
+              </thead>
+              <tbody>
+                {monthlyData.slice().reverse().map((data, index) => (
+                  <tr key={index}>
+                    <td>{data.month}</td>
+                    <td>{data.latex_used}</td>
+                    <td>{data.glue_produced}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="section">
         <div className="section-title">💰 Batch Profitability</div>
-        <div className="chart-container">
-          <Bar data={profitChartData} options={chartOptions} />
-        </div>
+        {chartsLoaded ? (
+          <div className="chart-container">
+            <Bar data={profitChartData} options={chartOptions} />
+          </div>
+        ) : (
+          <div className="mobile-chart-fallback">
+            <p>📊 Chart view not available on this device</p>
+            <p>See batch performance table below for detailed profit data.</p>
+          </div>
+        )}
       </div>
 
       <div className="section">

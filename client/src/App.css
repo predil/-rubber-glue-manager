@@ -216,6 +216,19 @@ body {
   margin: 2rem 0;
 }
 
+.mobile-chart-fallback {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.mobile-chart-fallback p {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
 .currency {
   color: #2d5a27;
   font-weight: 600;
