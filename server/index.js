@@ -166,14 +166,14 @@ app.post('/api/returns', (req, res) => {
   const { sale_id, return_date, quantity_returned, reason } = req.body;
   
   // First get the sale details to calculate refund
-  db.get('SELECT * FROM sales WHERE id = $1', [sale_id], (err, sale) => {
+  db.get('SELECT * FROM sales WHERE id = ?', [sale_id], (err, sale) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!sale) return res.status(404).json({ error: 'Sale not found' });
     
     const refund_amount = quantity_returned * sale.price_per_kg;
     
     db.run(
-      'INSERT INTO returns (sale_id, return_date, quantity_returned, reason, refund_amount) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      'INSERT INTO returns (sale_id, return_date, quantity_returned, reason, refund_amount) VALUES (?, ?, ?, ?, ?)',
       [sale_id, return_date, quantity_returned, reason || '', refund_amount],
       function(err) {
         if (err) return res.status(500).json({ error: err.message });

@@ -40,6 +40,18 @@ db.serialize(() => {
     FOREIGN KEY (customer_id) REFERENCES customers (id)
   )`);
 
+  // Returns table
+  db.run(`CREATE TABLE IF NOT EXISTS returns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL,
+    return_date TEXT NOT NULL,
+    quantity_returned REAL NOT NULL,
+    reason TEXT,
+    refund_amount REAL NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sale_id) REFERENCES sales (id)
+  )`);
+
   // Create trigger to auto-increment batch_number
   db.run(`CREATE TRIGGER IF NOT EXISTS auto_batch_number 
     AFTER INSERT ON batches 
