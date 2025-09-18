@@ -4,7 +4,23 @@ const { Pool } = require('pg');
 let db;
 let pool = null;
 
-if (process.env.DATABASE_URL) {
+if (process.env.USE_GOOGLE_SHEETS) {
+  // Google Sheets: Cloud spreadsheet database
+  console.log('Using Google Sheets Database');
+  db = require('./google-sheets-db');
+} else if (process.env.USE_AIRTABLE) {
+  // Airtable: Cloud database with spreadsheet interface
+  console.log('Using Airtable Database');
+  db = require('./airtable-db');
+} else if (process.env.USE_EXCEL_DB) {
+  // Excel: Use Excel file database (local only)
+  console.log('Using Excel Database');
+  db = require('./excel-db');
+} else if (process.env.USE_JSON_DB) {
+  // Serverless: Use JSON database
+  console.log('Using JSON Database (Serverless)');
+  db = require('./json-db');
+} else if (process.env.DATABASE_URL) {
   // Production: Use Neon PostgreSQL
   console.log('Using PostgreSQL (Neon)');
   
