@@ -63,7 +63,7 @@ const SmartFeatures = () => {
     else if (activeTab === 'pricing') fetchSmartPricing();
     else if (activeTab === 'demand') fetchDemandPrediction();
     else if (activeTab === 'quality') fetchQualityPrediction();
-  }, [activeTab]);
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderAnomalyDetection = () => {
     if (!anomalyData) return <div className="loading">Loading...</div>;

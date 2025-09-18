@@ -4,7 +4,6 @@ import Login from './components/Login';
 import BatchManager from './components/BatchManager';
 import CustomerManager from './components/CustomerManager';
 import SalesManager from './components/SalesManager';
-import BasicAnalytics from './components/BasicAnalytics';
 import BackupRestore from './components/BackupRestore';
 import RecipeCalculator from './components/RecipeCalculator';
 import ReturnsManager from './components/ReturnsManager';

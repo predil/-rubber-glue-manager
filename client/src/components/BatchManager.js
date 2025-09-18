@@ -225,7 +225,7 @@ function BatchManager({ batches, onUpdate }) {
   useEffect(() => {
     const timeoutId = setTimeout(calculateCosts, 500); // Debounce
     return () => clearTimeout(timeoutId);
-  }, [formData.latex_quantity, formData.production_date]);
+  }, [formData.latex_quantity, formData.production_date]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
