@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 function CostManager() {
   const [activeSection, setActiveSection] = useState('chemicals');
@@ -38,8 +39,7 @@ function CostManager() {
 
   const fetchChemicals = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/chemicals`);
+      const response = await fetch(`${API_URL}/api/chemicals`);
       const data = await response.json();
       setChemicals(data);
     } catch (error) {
@@ -49,8 +49,7 @@ function CostManager() {
 
   const fetchMonthlyCosts = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/monthly-costs`);
+      const response = await fetch(`${API_URL}/api/monthly-costs`);
       const data = await response.json();
       setMonthlyCosts(data);
     } catch (error) {
@@ -60,8 +59,7 @@ function CostManager() {
 
   const fetchTransports = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/latex-transport`);
+      const response = await fetch(`${API_URL}/api/latex-transport`);
       const data = await response.json();
       setTransports(data);
     } catch (error) {
@@ -73,8 +71,7 @@ function CostManager() {
     e.preventDefault();
     
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      await fetch(`${apiUrl}/api/chemicals`, {
+      await fetch(`${API_URL}/api/chemicals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(chemicalForm)
@@ -100,8 +97,7 @@ function CostManager() {
     e.preventDefault();
     
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      await fetch(`${apiUrl}/api/monthly-costs`, {
+      await fetch(`${API_URL}/api/monthly-costs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(monthlyForm)
@@ -125,8 +121,7 @@ function CostManager() {
     e.preventDefault();
     
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      await fetch(`${apiUrl}/api/latex-transport`, {
+      await fetch(`${API_URL}/api/latex-transport`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transportForm)
