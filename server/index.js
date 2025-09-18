@@ -5,8 +5,8 @@ const { initializeSampleData } = require('./init-data');
 const XLSX = require('xlsx');
 const multer = require('multer');
 
-// Initialize sample data on startup
-setTimeout(initializeSampleData, 1000);
+// Skip sample data initialization to avoid database errors
+// setTimeout(initializeSampleData, 1000);
 
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
