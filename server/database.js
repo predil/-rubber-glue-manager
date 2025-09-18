@@ -2,12 +2,12 @@ const { Pool } = require('pg');
 
 // Use Neon PostgreSQL for production, SQLite for local development
 let db;
+let pool = null;
 
 if (process.env.DATABASE_URL) {
   // Production: Use Neon PostgreSQL
   console.log('Using PostgreSQL (Neon)');
   
-  let pool;
   try {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
