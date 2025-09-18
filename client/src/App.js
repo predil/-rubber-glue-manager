@@ -13,6 +13,7 @@ import CostManager from './components/CostManager';
 import LowStockAlert from './components/LowStockAlert';
 import AdvancedReports from './components/AdvancedReports';
 import PredictiveAnalytics from './components/PredictiveAnalytics';
+import SmartFeatures from './components/SmartFeatures';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -91,6 +92,7 @@ function App() {
     { id: 'analytics', label: 'Reports', icon: '📊' },
     { id: 'advanced-reports', label: 'Analytics', icon: '📈' },
     { id: 'predictive', label: 'Predictive', icon: '🔮' },
+    { id: 'smart', label: 'Smart AI', icon: '🧠' },
     { id: 'backup', label: 'Backup', icon: '💾' },
     { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
@@ -165,6 +167,9 @@ function App() {
         )}
         {activeTab === 'predictive' && (
           <PredictiveAnalytics />
+        )}
+        {activeTab === 'smart' && (
+          <SmartFeatures />
         )}
         {activeTab === 'backup' && (
           <BackupRestore onUpdate={() => {

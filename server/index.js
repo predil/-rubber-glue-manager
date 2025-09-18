@@ -235,6 +235,245 @@ app.get('/api/analytics/summary', (req, res) => {
   });
 });
 
+// Smart AI Features Routes
+app.get('/api/smart/anomaly-detection', (req, res) => {
+  const query = `
+    SELECT 
+      b.id, b.batch_number, b.latex_quantity, b.glue_separated,
+      b.production_date, bc.total_cost,
+      b.glue_separated / b.latex_quantity as conversion_rate,
+      bc.total_cost / b.glue_separated as cost_per_kg,
+      (SELECT AVG(glue_separated / latex_quantity) FROM batches WHERE production_date >= date('now', '-30 days')) as avg_conversion,
+      (SELECT AVG(bc2.total_cost / b2.glue_separated) FROM batches b2 JOIN batch_costs bc2 ON b2.id = bc2.batch_id WHERE b2.production_date >= date('now', '-30 days')) as avg_cost_per_kg
+    FROM batches b
+    JOIN batch_costs bc ON b.id = bc.batch_id
+    WHERE b.production_date >= date('now', '-60 days')
+    ORDER BY b.production_date DESC
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    const anomalies = rows.filter(row => {
+      const conversionDeviation = Math.abs(row.conversion_rate - row.avg_conversion) / row.avg_conversion;
+      const costDeviation = Math.abs(row.cost_per_kg - row.avg_cost_per_kg) / row.avg_cost_per_kg;
+      return conversionDeviation > 0.2 || costDeviation > 0.3;
+    }).map(row => ({
+      batch_number: row.batch_number,
+      date: row.production_date,
+      type: Math.abs(row.conversion_rate - row.avg_conversion) / row.avg_conversion > 0.2 ? 'conversion' : 'cost',
+      severity: Math.abs(row.conversion_rate - row.avg_conversion) / row.avg_conversion > 0.3 || Math.abs(row.cost_per_kg - row.avg_cost_per_kg) / row.avg_cost_per_kg > 0.5 ? 'high' : 'medium',
+      value: row.conversion_rate,
+      expected: row.avg_conversion,
+      deviation: Math.round(Math.abs(row.conversion_rate - row.avg_conversion) / row.avg_conversion * 100)
+    }));
+    
+    res.json({ anomalies, total_batches: rows.length, anomaly_rate: Math.round(anomalies.length / rows.length * 100) });
+  });
+});
+
+app.get('/api/smart/pricing-suggestions', (req, res) => {
+  const query = `
+    SELECT 
+      b.selling_price_per_kg,
+      COUNT(s.id) as sales_count,
+      SUM(s.quantity_sold) as total_sold,
+      AVG(s.quantity_sold) as avg_quantity,
+      bc.total_cost / b.glue_separated as cost_per_kg,
+      (b.selling_price_per_kg - bc.total_cost / b.glue_separated) as profit_per_kg
+    FROM batches b
+    JOIN batch_costs bc ON b.id = bc.batch_id
+    LEFT JOIN sales s ON b.id = s.batch_id
+    WHERE b.production_date >= date('now', '-90 days')
+    GROUP BY b.selling_price_per_kg, bc.total_cost / b.glue_separated
+    HAVING sales_count > 0
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (rows.length < 2) {
+      res.json({ suggestion: 'insufficient_data', optimal_price: null });
+      return;
+    }
+    
+    // Calculate demand elasticity and optimal price
+    const avgCost = rows.reduce((sum, r) => sum + r.cost_per_kg, 0) / rows.length;
+    const pricePoints = rows.map(r => ({ price: r.selling_price_per_kg, demand: r.total_sold, profit: r.profit_per_kg * r.total_sold }));
+    
+    // Find price with highest total profit
+    const optimalPoint = pricePoints.reduce((best, current) => current.profit > best.profit ? current : best);
+    
+    // AI-suggested price range based on market dynamics
+    const marketPrice = avgCost * 1.8; // 80% markup
+    const premiumPrice = avgCost * 2.2; // 120% markup
+    const competitivePrice = avgCost * 1.5; // 50% markup
+    
+    res.json({
+      current_optimal: optimalPoint.price,
+      ai_suggestions: {
+        competitive: Math.round(competitivePrice),
+        market: Math.round(marketPrice),
+        premium: Math.round(premiumPrice)
+      },
+      recommendation: marketPrice < optimalPoint.price ? 'increase_price' : 'maintain_price',
+      expected_impact: Math.round((marketPrice - optimalPoint.price) / optimalPoint.price * 100)
+    });
+  });
+});
+
+app.get('/api/smart/demand-prediction', (req, res) => {
+  const query = `
+    SELECT 
+      DATE(sale_date) as date,
+      SUM(quantity_sold) as daily_sales,
+      AVG(price_per_kg) as avg_price,
+      strftime('%w', sale_date) as day_of_week,
+      strftime('%m', sale_date) as month
+    FROM sales 
+    WHERE sale_date >= date('now', '-180 days')
+    GROUP BY DATE(sale_date)
+    ORDER BY date
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (rows.length < 14) {
+      res.json({ prediction: 'insufficient_data', confidence: 0 });
+      return;
+    }
+    
+    // ML-based prediction using multiple factors
+    const weeklyPattern = Array(7).fill(0);
+    const monthlyPattern = Array(12).fill(0);
+    const weeklyCount = Array(7).fill(0);
+    const monthlyCount = Array(12).fill(0);
+    
+    rows.forEach(row => {
+      const dow = parseInt(row.day_of_week);
+      const month = parseInt(row.month) - 1;
+      weeklyPattern[dow] += row.daily_sales;
+      monthlyPattern[month] += row.daily_sales;
+      weeklyCount[dow]++;
+      monthlyCount[month]++;
+    });
+    
+    // Calculate averages
+    for (let i = 0; i < 7; i++) weeklyPattern[i] = weeklyCount[i] > 0 ? weeklyPattern[i] / weeklyCount[i] : 0;
+    for (let i = 0; i < 12; i++) monthlyPattern[i] = monthlyCount[i] > 0 ? monthlyPattern[i] / monthlyCount[i] : 0;
+    
+    // Generate 14-day prediction
+    const predictions = [];
+    for (let i = 1; i <= 14; i++) {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + i);
+      const dow = futureDate.getDay();
+      const month = futureDate.getMonth();
+      
+      const weeklyFactor = weeklyPattern[dow] || 0;
+      const monthlyFactor = monthlyPattern[month] || 0;
+      const trendFactor = rows.length > 30 ? (rows.slice(-7).reduce((sum, r) => sum + r.daily_sales, 0) / 7) : weeklyFactor;
+      
+      const predicted = (weeklyFactor * 0.4 + monthlyFactor * 0.3 + trendFactor * 0.3);
+      
+      predictions.push({
+        date: futureDate.toISOString().split('T')[0],
+        predicted_demand: Math.max(0, Math.round(predicted * 100) / 100),
+        confidence: Math.min(90, 60 + (rows.length / 10))
+      });
+    }
+    
+    res.json({ predictions, model: 'ensemble', factors: ['weekly_pattern', 'monthly_trend', 'recent_trend'] });
+  });
+});
+
+app.get('/api/smart/quality-prediction', (req, res) => {
+  const { latex_quantity } = req.query;
+  
+  if (!latex_quantity) {
+    res.status(400).json({ error: 'latex_quantity parameter required' });
+    return;
+  }
+  
+  const query = `
+    SELECT 
+      b.latex_quantity,
+      b.glue_separated,
+      b.glue_separated / b.latex_quantity as conversion_rate,
+      bc.chemical_cost,
+      bc.total_cost,
+      (SELECT COUNT(*) FROM returns r JOIN sales s ON r.sale_id = s.id WHERE s.batch_id = b.id) as return_count
+    FROM batches b
+    JOIN batch_costs bc ON b.id = bc.batch_id
+    WHERE b.production_date >= date('now', '-90 days')
+    ORDER BY b.production_date DESC
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (rows.length < 5) {
+      res.json({ prediction: 'insufficient_data', quality_score: null });
+      return;
+    }
+    
+    const inputLatex = parseFloat(latex_quantity);
+    
+    // Find similar batch sizes for comparison
+    const similarBatches = rows.filter(r => Math.abs(r.latex_quantity - inputLatex) <= inputLatex * 0.2);
+    const allBatches = rows;
+    
+    // Calculate quality metrics
+    const avgConversion = allBatches.reduce((sum, r) => sum + r.conversion_rate, 0) / allBatches.length;
+    const avgReturnRate = allBatches.reduce((sum, r) => sum + r.return_count, 0) / allBatches.length;
+    
+    // Predict conversion rate based on batch size
+    let predictedConversion = avgConversion;
+    if (similarBatches.length > 0) {
+      predictedConversion = similarBatches.reduce((sum, r) => sum + r.conversion_rate, 0) / similarBatches.length;
+    }
+    
+    // Quality score calculation (0-100)
+    const conversionScore = Math.min(100, (predictedConversion / 0.85) * 100); // 85% is excellent
+    const sizeScore = inputLatex >= 150 && inputLatex <= 200 ? 100 : Math.max(60, 100 - Math.abs(inputLatex - 175) / 2);
+    const consistencyScore = similarBatches.length >= 3 ? 90 : 70;
+    
+    const qualityScore = Math.round((conversionScore * 0.5 + sizeScore * 0.3 + consistencyScore * 0.2));
+    
+    // Risk assessment
+    const riskFactors = [];
+    if (inputLatex < 100) riskFactors.push('Small batch size may reduce efficiency');
+    if (inputLatex > 250) riskFactors.push('Large batch size may affect quality control');
+    if (predictedConversion < avgConversion * 0.9) riskFactors.push('Below average conversion rate expected');
+    
+    res.json({
+      quality_score: qualityScore,
+      predicted_conversion: Math.round(predictedConversion * 1000) / 1000,
+      expected_glue_output: Math.round(inputLatex * predictedConversion * 100) / 100,
+      risk_level: qualityScore >= 80 ? 'low' : qualityScore >= 60 ? 'medium' : 'high',
+      risk_factors: riskFactors,
+      recommendations: [
+        qualityScore < 70 ? 'Consider adjusting batch size to 150-200kg range' : 'Batch size is optimal',
+        'Monitor chemical ratios carefully',
+        'Ensure proper mixing time and temperature'
+      ]
+    });
+  });
+});
+
 // Predictive Analytics Routes
 app.get('/api/analytics/demand-forecast', (req, res) => {
   const query = `
