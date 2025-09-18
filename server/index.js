@@ -15,8 +15,10 @@ const app = express();
 const PORT = 5000;
 
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: ['https://rubber-glue-manager-6id2nid4e-predils-projects.vercel.app', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
