@@ -2,9 +2,7 @@
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/build",
   "functions": {
-    "server/index.js": {
-      "runtime": "nodejs18.x"
-    }
+    "server/index.js": {}
   },
   "rewrites": [
     {
