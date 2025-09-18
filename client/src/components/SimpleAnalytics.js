@@ -1,32 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 function SimpleAnalytics({ batches, sales }) {
-  const [summary, setSummary] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
-  const fetchAnalytics = async () => {
-    try {
-      setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      const summaryRes = await fetch(`${apiUrl}/api/analytics/summary`);
-      if (!summaryRes.ok) throw new Error('Failed to fetch data');
-      
-      const summaryData = await summaryRes.json();
-      setSummary(summaryData);
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
+  // Calculate summary from props instead of API
+  const calculateSummary = () => {
+    const totalLatex = batches.reduce((sum, batch) => sum + (batch.latex_quantity || 0), 0);
+    const totalGlue = batches.reduce((sum, batch) => sum + (batch.glue_separated || 0), 0);
+    const totalSales = sales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+    const totalCosts = batches.reduce((sum, batch) => sum + (batch.cost_to_prepare || 0), 0);
+    const totalProfit = totalSales - totalCosts;
+    
+    return { totalLatex, totalGlue, totalSales, totalCosts, totalProfit };
   };
+  
+  const summary = calculateSummary();
 
   const calculateBatchProfits = () => {
     return batches.map(batch => {
@@ -65,29 +51,7 @@ function SimpleAnalytics({ batches, sales }) {
     return Object.values(customerMap).sort((a, b) => b.totalAmount - a.totalAmount);
   };
 
-  if (loading) {
-    return (
-      <div className="section">
-        <div className="section-title">📊 Analytics</div>
-        <p>Loading analytics data...</p>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="section">
-        <div className="section-title">📊 Analytics</div>
-        <div className="mobile-chart-fallback">
-          <p>⚠️ Unable to load analytics data</p>
-          <p>Error: {error}</p>
-          <button className="btn btn-primary" onClick={fetchAnalytics}>
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const batchProfits = calculateBatchProfits();
   const customerSales = getCustomerSales();
@@ -99,25 +63,25 @@ function SimpleAnalytics({ batches, sales }) {
         
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-value">{summary.totalLatex ? summary.totalLatex.toFixed(1) : 0}</div>
+            <div className="stat-value">{summary.totalLatex.toFixed(1)}</div>
             <div className="stat-label">Total Latex Used (kg)</div>
           </div>
           
           <div className="stat-card">
-            <div className="stat-value">{summary.totalGlue ? summary.totalGlue.toFixed(1) : 0}</div>
+            <div className="stat-value">{summary.totalGlue.toFixed(1)}</div>
             <div className="stat-label">Total Glue Produced (kg)</div>
           </div>
           
           <div className="stat-card">
             <div className="stat-value currency">
-              {summary.totalSales ? summary.totalSales.toLocaleString() : 0}
+              {summary.totalSales.toLocaleString()}
             </div>
             <div className="stat-label">Total Sales (LKR)</div>
           </div>
           
           <div className="stat-card">
-            <div className={`stat-value ${(summary.totalProfit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}`}>
-              {summary.totalProfit ? summary.totalProfit.toLocaleString() : 0}
+            <div className={`stat-value ${summary.totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+              {summary.totalProfit.toLocaleString()}
             </div>
             <div className="stat-label">Total Profit (LKR)</div>
           </div>
