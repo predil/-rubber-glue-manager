@@ -8,31 +8,23 @@ if (process.env.DATABASE_URL) {
   // Production: Use Neon PostgreSQL
   console.log('Using PostgreSQL (Neon)');
   
-  try {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
-  } catch (error) {
-    console.error('Failed to create pool:', error);
-    pool = null;
-  }
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
   
   db = {
     run: (sql, params = [], callback = () => {}) => {
-      if (!pool) return callback(new Error('Database not connected'));
       pool.query(sql, params)
         .then(result => callback(null, result))
         .catch(err => callback(err));
     },
     get: (sql, params = [], callback) => {
-      if (!pool) return callback(new Error('Database not connected'));
       pool.query(sql, params)
         .then(result => callback(null, result.rows[0] || null))
         .catch(err => callback(err));
     },
     all: (sql, params = [], callback) => {
-      if (!pool) return callback(new Error('Database not connected'));
       pool.query(sql, params)
         .then(result => callback(null, result.rows || []))
         .catch(err => callback(err));
