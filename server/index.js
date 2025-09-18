@@ -31,10 +31,31 @@ app.get('/', (req, res) => {
   res.json({ message: 'Rubber Glue API Server', status: 'running', database: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite' });
 });
 
-// Add request logging
+// Database test route
+app.get('/api/test-db', (req, res) => {
+  if (!db || !db.all) {
+    return res.status(500).json({ error: 'Database not initialized', db_exists: !!db });
+  }
+  
+  db.all('SELECT 1 as test', [], (err, rows) => {
+    if (err) {
+      console.error('Database test error:', err);
+      return res.status(500).json({ error: 'Database connection failed', message: err.message });
+    }
+    res.json({ status: 'Database connected', test_result: rows });
+  });
+});
+
+// Add request logging and error handling
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`, req.body);
   next();
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error:', err);
+  res.status(500).json({ error: 'Internal server error', message: err.message });
 });
 
 // Simple demo users (in production, use proper password hashing)
