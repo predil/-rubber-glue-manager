@@ -1189,7 +1189,11 @@ app.post('/api/restore', upload.single('backup'), (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-  console.log(`Access from phone: http://[YOUR_PC_IP]:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Access from phone: http://[YOUR_PC_IP]:${PORT}`);
+  });
+}
+
+module.exports = app;
