@@ -18,6 +18,18 @@ function BatchManager({ batches, onUpdate }) {
     labour_cost: 0,
     total_cost: 0
   });
+  
+  const [editableCosts, setEditableCosts] = useState({
+    chemical_cost: false,
+    transport_cost: false,
+    labour_cost: false
+  });
+  
+  const [manualCosts, setManualCosts] = useState({
+    chemical_cost: 0,
+    transport_cost: 0,
+    labour_cost: 0
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,6 +96,16 @@ function BatchManager({ batches, onUpdate }) {
       labour_cost: 0,
       total_cost: 0
     });
+    setEditableCosts({
+      chemical_cost: false,
+      transport_cost: false,
+      labour_cost: false
+    });
+    setManualCosts({
+      chemical_cost: 0,
+      transport_cost: 0,
+      labour_cost: 0
+    });
     setEditingBatch(null);
     setShowForm(false);
   };
@@ -106,6 +128,48 @@ function BatchManager({ batches, onUpdate }) {
   };
 
   const averageRate = getAverageProductionRate();
+
+  const handleCostClick = (costType) => {
+    setEditableCosts(prev => ({
+      ...prev,
+      [costType]: true
+    }));
+    setManualCosts(prev => ({
+      ...prev,
+      [costType]: costBreakdown[costType]
+    }));
+  };
+
+  const handleCostChange = (costType, value) => {
+    setManualCosts(prev => ({
+      ...prev,
+      [costType]: parseFloat(value) || 0
+    }));
+    
+    // Update total cost
+    const newCosts = {
+      ...costBreakdown,
+      [costType]: parseFloat(value) || 0
+    };
+    const newTotal = newCosts.chemical_cost + newCosts.transport_cost + newCosts.labour_cost;
+    
+    setCostBreakdown({
+      ...newCosts,
+      total_cost: newTotal
+    });
+    
+    setFormData(prev => ({
+      ...prev,
+      cost_to_prepare: newTotal.toFixed(2)
+    }));
+  };
+
+  const handleCostBlur = (costType) => {
+    setEditableCosts(prev => ({
+      ...prev,
+      [costType]: false
+    }));
+  };
 
   // Calculate costs when latex quantity or production date changes
   const calculateCosts = async () => {
@@ -239,23 +303,113 @@ function BatchManager({ batches, onUpdate }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.9rem', color: '#666' }}>Chemical Cost</label>
-                  <div style={{ fontWeight: 'bold', color: '#28a745' }}>
-                    LKR {costBreakdown.chemical_cost.toFixed(2)}
-                  </div>
+                  {editableCosts.chemical_cost ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={manualCosts.chemical_cost}
+                      onChange={(e) => handleCostChange('chemical_cost', e.target.value)}
+                      onBlur={() => handleCostBlur('chemical_cost')}
+                      autoFocus
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#28a745',
+                        border: '1px solid #28a745',
+                        borderRadius: '4px',
+                        padding: '2px 4px',
+                        width: '100%'
+                      }}
+                    />
+                  ) : (
+                    <div 
+                      style={{ 
+                        fontWeight: 'bold', 
+                        color: '#28a745',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
+                        border: '1px solid transparent'
+                      }}
+                      onClick={() => handleCostClick('chemical_cost')}
+                      title="Click to edit"
+                    >
+                      LKR {costBreakdown.chemical_cost.toFixed(2)}
+                    </div>
+                  )}
                 </div>
                 
                 <div>
                   <label style={{ fontSize: '0.9rem', color: '#666' }}>Transport Cost</label>
-                  <div style={{ fontWeight: 'bold', color: '#17a2b8' }}>
-                    LKR {costBreakdown.transport_cost.toFixed(2)}
-                  </div>
+                  {editableCosts.transport_cost ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={manualCosts.transport_cost}
+                      onChange={(e) => handleCostChange('transport_cost', e.target.value)}
+                      onBlur={() => handleCostBlur('transport_cost')}
+                      autoFocus
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#17a2b8',
+                        border: '1px solid #17a2b8',
+                        borderRadius: '4px',
+                        padding: '2px 4px',
+                        width: '100%'
+                      }}
+                    />
+                  ) : (
+                    <div 
+                      style={{ 
+                        fontWeight: 'bold', 
+                        color: '#17a2b8',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
+                        border: '1px solid transparent'
+                      }}
+                      onClick={() => handleCostClick('transport_cost')}
+                      title="Click to edit"
+                    >
+                      LKR {costBreakdown.transport_cost.toFixed(2)}
+                    </div>
+                  )}
                 </div>
                 
                 <div>
                   <label style={{ fontSize: '0.9rem', color: '#666' }}>Labour Cost</label>
-                  <div style={{ fontWeight: 'bold', color: '#ffc107' }}>
-                    LKR {costBreakdown.labour_cost.toFixed(2)}
-                  </div>
+                  {editableCosts.labour_cost ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={manualCosts.labour_cost}
+                      onChange={(e) => handleCostChange('labour_cost', e.target.value)}
+                      onBlur={() => handleCostBlur('labour_cost')}
+                      autoFocus
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#ffc107',
+                        border: '1px solid #ffc107',
+                        borderRadius: '4px',
+                        padding: '2px 4px',
+                        width: '100%'
+                      }}
+                    />
+                  ) : (
+                    <div 
+                      style={{ 
+                        fontWeight: 'bold', 
+                        color: '#ffc107',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
+                        border: '1px solid transparent'
+                      }}
+                      onClick={() => handleCostClick('labour_cost')}
+                      title="Click to edit"
+                    >
+                      LKR {costBreakdown.labour_cost.toFixed(2)}
+                    </div>
+                  )}
                 </div>
                 
                 <div>
