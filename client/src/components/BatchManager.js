@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function BatchManager({ batches, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
@@ -109,13 +109,18 @@ function BatchManager({ batches, onUpdate }) {
 
   // Calculate costs when latex quantity or production date changes
   const calculateCosts = async () => {
+    console.log('Calculating costs for:', formData.latex_quantity, formData.production_date);
+    
     if (!formData.latex_quantity || !formData.production_date) {
+      console.log('Missing data, resetting costs');
       setCostBreakdown({ chemical_cost: 0, transport_cost: 0, labour_cost: 0, total_cost: 0 });
       return;
     }
 
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      console.log('Calling API:', `${apiUrl}/api/calculate-batch-cost`);
+      
       const response = await fetch(`${apiUrl}/api/calculate-batch-cost`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,20 +130,27 @@ function BatchManager({ batches, onUpdate }) {
         })
       });
       
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const costs = await response.json();
+        console.log('Received costs:', costs);
+        
         setCostBreakdown({
-          chemical_cost: costs.chemical_cost,
-          transport_cost: costs.transportation_cost,
-          labour_cost: costs.labour_cost,
-          total_cost: costs.total_cost
+          chemical_cost: costs.chemical_cost || 0,
+          transport_cost: costs.transportation_cost || 0,
+          labour_cost: costs.labour_cost || 0,
+          total_cost: costs.total_cost || 0
         });
         
         // Auto-update the cost_to_prepare field
         setFormData(prev => ({
           ...prev,
-          cost_to_prepare: costs.total_cost.toFixed(2)
+          cost_to_prepare: (costs.total_cost || 0).toFixed(2)
         }));
+      } else {
+        const errorText = await response.text();
+        console.error('API error:', errorText);
       }
     } catch (error) {
       console.error('Error calculating costs:', error);
@@ -146,7 +158,7 @@ function BatchManager({ batches, onUpdate }) {
   };
 
   // Recalculate costs when latex quantity or date changes
-  React.useEffect(() => {
+  useEffect(() => {
     const timeoutId = setTimeout(calculateCosts, 500); // Debounce
     return () => clearTimeout(timeoutId);
   }, [formData.latex_quantity, formData.production_date]);
