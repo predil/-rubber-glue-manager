@@ -9,6 +9,7 @@ import BackupRestore from './components/BackupRestore';
 import RecipeCalculator from './components/RecipeCalculator';
 import ReturnsManager from './components/ReturnsManager';
 import Settings from './components/Settings';
+import CostManager from './components/CostManager';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -80,8 +81,9 @@ function App() {
   const tabs = [
     { id: 'batches', label: 'Production', icon: '🏭' },
     { id: 'recipe', label: 'Recipe', icon: '🧪' },
+    { id: 'costs', label: 'Costs', icon: '💰' },
     { id: 'customers', label: 'Customers', icon: '👥' },
-    { id: 'sales', label: 'Sales', icon: '💰' },
+    { id: 'sales', label: 'Sales', icon: '💵' },
     { id: 'returns', label: 'Returns', icon: '🔄' },
     { id: 'analytics', label: 'Reports', icon: '📊' },
     { id: 'backup', label: 'Backup', icon: '💾' },
@@ -126,6 +128,9 @@ function App() {
         )}
         {activeTab === 'recipe' && (
           <RecipeCalculator />
+        )}
+        {activeTab === 'costs' && (
+          <CostManager />
         )}
         {activeTab === 'customers' && (
           <CustomerManager customers={customers} onUpdate={fetchCustomers} />

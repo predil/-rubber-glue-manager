@@ -70,6 +70,60 @@ db.serialize(() => {
     }
   });
 
+  // Chemical inventory table
+  db.run(`CREATE TABLE IF NOT EXISTS chemical_inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chemical_name TEXT NOT NULL,
+    purchase_date TEXT NOT NULL,
+    quantity_purchased REAL NOT NULL,
+    unit TEXT NOT NULL,
+    total_cost REAL NOT NULL,
+    cost_per_unit REAL NOT NULL,
+    remaining_quantity REAL NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Monthly costs table
+  db.run(`CREATE TABLE IF NOT EXISTS monthly_costs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    month_year TEXT NOT NULL,
+    labour_cost REAL NOT NULL,
+    transportation_cost REAL NOT NULL,
+    other_costs REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Batch cost breakdown table
+  db.run(`CREATE TABLE IF NOT EXISTS batch_costs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id INTEGER NOT NULL,
+    labour_cost REAL NOT NULL,
+    transportation_cost REAL NOT NULL,
+    chemical_cost REAL NOT NULL,
+    total_cost REAL NOT NULL,
+    FOREIGN KEY (batch_id) REFERENCES batches (id)
+  )`);
+
+  // Insert default chemicals if not exists
+  db.get('SELECT COUNT(*) as count FROM chemical_inventory', (err, row) => {
+    if (!err && row.count === 0) {
+      const defaultChemicals = [
+        ['Coconut Oil', '2024-01-01', 25, 'kg', 7500, 300, 25],
+        ['KOH', '2024-01-01', 10, 'kg', 2000, 200, 10],
+        ['HEC', '2024-01-01', 5, 'kg', 3000, 600, 5],
+        ['Sodium Benzoate', '2024-01-01', 5, 'kg', 1500, 300, 5],
+        ['Ammonia', '2024-01-01', 20, 'L', 1000, 50, 20]
+      ];
+      
+      defaultChemicals.forEach(([name, date, qty, unit, cost, perUnit, remaining]) => {
+        db.run(`INSERT INTO chemical_inventory 
+                (chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, remaining_quantity)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [name, date, qty, unit, cost, perUnit, remaining]);
+      });
+    }
+  });
+
   // Create trigger to auto-increment batch_number
   db.run(`CREATE TRIGGER IF NOT EXISTS auto_batch_number 
     AFTER INSERT ON batches 

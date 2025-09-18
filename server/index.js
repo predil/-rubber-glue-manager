@@ -232,6 +232,110 @@ app.get('/api/analytics/monthly', (req, res) => {
   });
 });
 
+// COST MANAGEMENT ROUTES
+app.get('/api/chemicals', (req, res) => {
+  db.all('SELECT * FROM chemical_inventory ORDER BY chemical_name', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/chemicals', (req, res) => {
+  const { chemical_name, purchase_date, quantity_purchased, unit, total_cost } = req.body;
+  const cost_per_unit = total_cost / quantity_purchased;
+  
+  db.run(`INSERT INTO chemical_inventory 
+          (chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, remaining_quantity)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, quantity_purchased],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: this.lastID, message: 'Chemical added successfully' });
+    }
+  );
+});
+
+app.get('/api/monthly-costs', (req, res) => {
+  db.all('SELECT * FROM monthly_costs ORDER BY month_year DESC', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/monthly-costs', (req, res) => {
+  const { month_year, labour_cost, transportation_cost, other_costs } = req.body;
+  
+  db.run(`INSERT OR REPLACE INTO monthly_costs 
+          (month_year, labour_cost, transportation_cost, other_costs)
+          VALUES (?, ?, ?, ?)`,
+    [month_year, labour_cost, transportation_cost, other_costs || 0],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Monthly costs updated successfully' });
+    }
+  );
+});
+
+app.post('/api/calculate-batch-cost', (req, res) => {
+  const { latex_quantity, production_date } = req.body;
+  
+  // Get monthly costs for the production month
+  const monthYear = production_date.substring(0, 7); // YYYY-MM
+  
+  db.get('SELECT * FROM monthly_costs WHERE month_year = ?', [monthYear], (err, monthlyCosts) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    if (!monthlyCosts) {
+      return res.status(400).json({ error: 'Monthly costs not set for ' + monthYear });
+    }
+    
+    // Calculate chemical costs based on recipe
+    const ratio = latex_quantity / 170; // Base recipe for 170kg
+    const chemicalUsage = {
+      'Coconut Oil': 0.19 * ratio,
+      'KOH': 0.05 * ratio,
+      'HEC': 0.135 * ratio,
+      'Sodium Benzoate': 0.17 * ratio,
+      'Ammonia': 0.1 * ratio // Estimated ammonia usage
+    };
+    
+    // Get chemical costs
+    db.all('SELECT * FROM chemical_inventory', (err, chemicals) => {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      let totalChemicalCost = 0;
+      const chemicalBreakdown = {};
+      
+      Object.keys(chemicalUsage).forEach(chemName => {
+        const chemical = chemicals.find(c => c.chemical_name === chemName);
+        if (chemical) {
+          const cost = chemicalUsage[chemName] * chemical.cost_per_unit;
+          totalChemicalCost += cost;
+          chemicalBreakdown[chemName] = {
+            quantity: chemicalUsage[chemName],
+            unit: chemical.unit,
+            cost: cost
+          };
+        }
+      });
+      
+      // Assume 30 working days per month, distribute monthly costs
+      const dailyLabour = monthlyCosts.labour_cost / 30;
+      const dailyTransport = monthlyCosts.transportation_cost / 30;
+      
+      const batchCosts = {
+        labour_cost: dailyLabour,
+        transportation_cost: dailyTransport,
+        chemical_cost: totalChemicalCost,
+        total_cost: dailyLabour + dailyTransport + totalChemicalCost,
+        chemical_breakdown: chemicalBreakdown
+      };
+      
+      res.json(batchCosts);
+    });
+  });
+});
+
 // COMPANY SETTINGS ROUTES
 app.get('/api/settings', (req, res) => {
   db.get('SELECT * FROM company_settings ORDER BY id DESC LIMIT 1', (err, row) => {
