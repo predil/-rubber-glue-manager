@@ -31,21 +31,22 @@ if (process.env.USE_GOOGLE_SHEETS) {
   
   db = {
     run: (sql, params = [], callback = () => {}) => {
+      if (!pool) return callback(new Error('Pool not initialized'));
       pool.query(sql, params)
         .then(result => callback(null, result))
         .catch(err => callback(err));
     },
     get: (sql, params = [], callback) => {
+      if (!pool) return callback(new Error('Pool not initialized'));
       pool.query(sql, params)
         .then(result => callback(null, result.rows[0] || null))
         .catch(err => callback(err));
     },
     all: (sql, params = [], callback) => {
       if (!pool) return callback(new Error('Pool not initialized'));
-      const query = pool.query(sql, params);
-      if (!query || !query.then) return callback(new Error('Query failed'));
-      query.then(result => callback(null, result.rows || []))
-           .catch(err => callback(err));
+      pool.query(sql, params)
+        .then(result => callback(null, result.rows || []))
+        .catch(err => callback(err));
     },
     serialize: (fn) => fn()
   };
