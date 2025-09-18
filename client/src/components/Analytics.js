@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Conditional chart imports to prevent mobile crashes
+let Bar = null;
+let ChartJS = null;
+
+try {
+  const chartImports = require('chart.js');
+  const reactChartImports = require('react-chartjs-2');
+  
+  ChartJS = chartImports.Chart;
+  Bar = reactChartImports.Bar;
+  
+  if (ChartJS) {
+    ChartJS.register(
+      chartImports.CategoryScale,
+      chartImports.LinearScale,
+      chartImports.BarElement,
+      chartImports.LineElement,
+      chartImports.PointElement,
+      chartImports.Title,
+      chartImports.Tooltip,
+      chartImports.Legend
+    );
+  }
+} catch (error) {
+  console.log('Charts not available on this device');
+}
+
+
 
 function Analytics({ batches, sales }) {
   const [summary, setSummary] = useState({});
@@ -31,15 +37,11 @@ function Analytics({ batches, sales }) {
     fetchAnalytics();
   }, []);
 
-  // Fallback when charts don't load
-  const [chartsLoaded, setChartsLoaded] = useState(true);
+  // Check if charts are available
+  const chartsAvailable = Bar !== null && ChartJS !== null;
   
-  useEffect(() => {
-    // Check if Chart.js is available
-    if (typeof window !== 'undefined' && !window.Chart) {
-      setChartsLoaded(false);
-    }
-  }, []);
+  // Error handling
+  const [error, setError] = useState(null);
 
   const fetchAnalytics = async () => {
     try {
@@ -49,13 +51,22 @@ function Analytics({ batches, sales }) {
         fetch(`${apiUrl}/api/analytics/monthly`)
       ]);
       
+      if (!summaryRes.ok || !monthlyRes.ok) {
+        throw new Error('Failed to fetch analytics data');
+      }
+      
       const summaryData = await summaryRes.json();
       const monthlyData = await monthlyRes.json();
       
-      setSummary(summaryData);
-      setMonthlyData(monthlyData);
+      setSummary(summaryData || {});
+      setMonthlyData(monthlyData || []);
+      setError(null);
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setError(error.message);
+      // Set default values
+      setSummary({});
+      setMonthlyData([]);
     }
   };
 
@@ -146,6 +157,22 @@ function Analytics({ batches, sales }) {
     },
   };
 
+  // Show error message if there's an error
+  if (error) {
+    return (
+      <div className="section">
+        <div className="section-title">📊 Analytics</div>
+        <div className="mobile-chart-fallback">
+          <p>⚠️ Unable to load analytics data</p>
+          <p>Error: {error}</p>
+          <button className="btn btn-primary" onClick={fetchAnalytics}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="section">
@@ -153,25 +180,25 @@ function Analytics({ batches, sales }) {
         
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-value">{summary.totalLatex?.toFixed(1) || 0}</div>
+            <div className="stat-value">{summary.totalLatex ? summary.totalLatex.toFixed(1) : 0}</div>
             <div className="stat-label">Total Latex Used (kg)</div>
           </div>
           
           <div className="stat-card">
-            <div className="stat-value">{summary.totalGlue?.toFixed(1) || 0}</div>
+            <div className="stat-value">{summary.totalGlue ? summary.totalGlue.toFixed(1) : 0}</div>
             <div className="stat-label">Total Glue Produced (kg)</div>
           </div>
           
           <div className="stat-card">
             <div className="stat-value currency">
-              {summary.totalSales?.toLocaleString() || 0}
+              {summary.totalSales ? summary.totalSales.toLocaleString() : 0}
             </div>
             <div className="stat-label">Total Sales (LKR)</div>
           </div>
           
           <div className="stat-card">
-            <div className={`stat-value ${summary.totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}`}>
-              {summary.totalProfit?.toLocaleString() || 0}
+            <div className={`stat-value ${(summary.totalProfit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+              {summary.totalProfit ? summary.totalProfit.toLocaleString() : 0}
             </div>
             <div className="stat-label">Total Profit (LKR)</div>
           </div>
@@ -180,7 +207,7 @@ function Analytics({ batches, sales }) {
 
       <div className="section">
         <div className="section-title">📈 Production Trends</div>
-        {chartsLoaded ? (
+        {chartsAvailable ? (
           <div className="chart-container">
             <Bar data={productionChartData} options={chartOptions} />
           </div>
@@ -192,13 +219,17 @@ function Analytics({ batches, sales }) {
                 <tr><th>Month</th><th>Latex Used (kg)</th><th>Glue Produced (kg)</th></tr>
               </thead>
               <tbody>
-                {monthlyData.slice().reverse().map((data, index) => (
-                  <tr key={index}>
-                    <td>{data.month}</td>
-                    <td>{data.latex_used}</td>
-                    <td>{data.glue_produced}</td>
-                  </tr>
-                ))}
+                {monthlyData && monthlyData.length > 0 ? (
+                  monthlyData.slice().reverse().map((data, index) => (
+                    <tr key={index}>
+                      <td>{data.month || 'N/A'}</td>
+                      <td>{data.latex_used || 0}</td>
+                      <td>{data.glue_produced || 0}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="3">No production data available</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -207,7 +238,7 @@ function Analytics({ batches, sales }) {
 
       <div className="section">
         <div className="section-title">💰 Batch Profitability</div>
-        {chartsLoaded ? (
+        {chartsAvailable ? (
           <div className="chart-container">
             <Bar data={profitChartData} options={chartOptions} />
           </div>
