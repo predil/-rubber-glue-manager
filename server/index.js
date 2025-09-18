@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./postgres-db');
+const db = require('./database');
 const { initializeSampleData } = require('./init-data');
 const XLSX = require('xlsx');
 const multer = require('multer');
