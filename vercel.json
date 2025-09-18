@@ -1,21 +1,14 @@
 {
-  "builds": [
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/build",
+  "rewrites": [
     {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://rubber-glue-api.onrender.com/api/$1"
+      "source": "/api/(.*)",
+      "destination": "https://rubber-glue-api.onrender.com/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/client/build/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

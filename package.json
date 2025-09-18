@@ -2,14 +2,7 @@
   "name": "rubber-glue-manager",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm start",
-    "client": "cd client && npm start",
     "build": "cd client && npm install && npm run build",
-    "setup": "npm install && cd server && npm install && cd ../client && npm install",
-    "seed": "cd server && node seed.js"
-  },
-  "devDependencies": {
-    "concurrently": "^7.6.0"
+    "start": "cd client && npm start"
   }
 }
