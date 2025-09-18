@@ -11,6 +11,7 @@ import ReturnsManager from './components/ReturnsManager';
 import Settings from './components/Settings';
 import CostManager from './components/CostManager';
 import LowStockAlert from './components/LowStockAlert';
+import AdvancedReports from './components/AdvancedReports';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -87,6 +88,7 @@ function App() {
     { id: 'sales', label: 'Sales', icon: '💵' },
     { id: 'returns', label: 'Returns', icon: '🔄' },
     { id: 'analytics', label: 'Reports', icon: '📊' },
+    { id: 'advanced-reports', label: 'Analytics', icon: '📈' },
     { id: 'backup', label: 'Backup', icon: '💾' },
     { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
@@ -155,6 +157,9 @@ function App() {
         )}
         {activeTab === 'analytics' && (
           <BasicAnalytics batches={batches} sales={sales} />
+        )}
+        {activeTab === 'advanced-reports' && (
+          <AdvancedReports />
         )}
         {activeTab === 'backup' && (
           <BackupRestore onUpdate={() => {

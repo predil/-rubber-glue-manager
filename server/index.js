@@ -235,6 +235,133 @@ app.get('/api/analytics/summary', (req, res) => {
   });
 });
 
+// Advanced Analytics Routes
+app.get('/api/analytics/profit-trends', (req, res) => {
+  const query = `
+    SELECT 
+      strftime('%Y-%m', b.production_date) as month,
+      SUM(s.total_amount) as revenue,
+      SUM(b.cost_to_prepare) as costs,
+      (SUM(s.total_amount) - SUM(b.cost_to_prepare)) as profit,
+      ((SUM(s.total_amount) - SUM(b.cost_to_prepare)) / SUM(s.total_amount) * 100) as profit_margin
+    FROM batches b
+    LEFT JOIN sales s ON b.id = s.batch_id
+    WHERE s.id IS NOT NULL
+    GROUP BY strftime('%Y-%m', b.production_date)
+    ORDER BY month DESC
+    LIMIT 12
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/analytics/customer-profitability', (req, res) => {
+  const query = `
+    SELECT 
+      c.name,
+      c.contact_info,
+      COUNT(s.id) as total_orders,
+      SUM(s.quantity_sold) as total_quantity,
+      SUM(s.total_amount) as total_revenue,
+      AVG(s.price_per_kg) as avg_price_per_kg,
+      MIN(s.sale_date) as first_order,
+      MAX(s.sale_date) as last_order,
+      (julianday('now') - julianday(MAX(s.sale_date))) as days_since_last_order
+    FROM customers c
+    JOIN sales s ON c.id = s.customer_id
+    GROUP BY c.id, c.name
+    ORDER BY total_revenue DESC
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/analytics/seasonal-patterns', (req, res) => {
+  const query = `
+    SELECT 
+      CASE strftime('%m', sale_date)
+        WHEN '01' THEN 'January'
+        WHEN '02' THEN 'February'
+        WHEN '03' THEN 'March'
+        WHEN '04' THEN 'April'
+        WHEN '05' THEN 'May'
+        WHEN '06' THEN 'June'
+        WHEN '07' THEN 'July'
+        WHEN '08' THEN 'August'
+        WHEN '09' THEN 'September'
+        WHEN '10' THEN 'October'
+        WHEN '11' THEN 'November'
+        WHEN '12' THEN 'December'
+      END as month_name,
+      strftime('%m', sale_date) as month_num,
+      COUNT(*) as total_sales,
+      SUM(quantity_sold) as total_quantity,
+      SUM(total_amount) as total_revenue,
+      AVG(quantity_sold) as avg_order_size
+    FROM sales
+    GROUP BY strftime('%m', sale_date)
+    ORDER BY month_num
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/analytics/cost-efficiency', (req, res) => {
+  const query = `
+    SELECT 
+      b.batch_number,
+      b.production_date,
+      b.latex_quantity,
+      b.glue_separated,
+      b.cost_to_prepare as actual_cost,
+      (b.glue_separated / b.latex_quantity * 100) as conversion_rate,
+      (b.cost_to_prepare / b.glue_separated) as cost_per_kg_glue,
+      COALESCE(SUM(s.total_amount), 0) as revenue_generated,
+      COALESCE(SUM(s.total_amount) - b.cost_to_prepare, -b.cost_to_prepare) as profit
+    FROM batches b
+    LEFT JOIN sales s ON b.id = s.batch_id
+    GROUP BY b.id
+    ORDER BY b.production_date DESC
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/analytics/waste-analysis', (req, res) => {
+  const query = `
+    SELECT 
+      strftime('%Y-%m', production_date) as month,
+      COUNT(*) as total_batches,
+      SUM(latex_quantity) as total_latex,
+      SUM(glue_separated) as total_glue,
+      AVG(glue_separated / latex_quantity * 100) as avg_conversion_rate,
+      MIN(glue_separated / latex_quantity * 100) as min_conversion_rate,
+      MAX(glue_separated / latex_quantity * 100) as max_conversion_rate,
+      (SUM(latex_quantity) - SUM(glue_separated)) as total_waste
+    FROM batches
+    GROUP BY strftime('%Y-%m', production_date)
+    ORDER BY month DESC
+    LIMIT 12
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
 app.get('/api/analytics/monthly', (req, res) => {
   const query = `
     SELECT 
