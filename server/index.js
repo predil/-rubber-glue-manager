@@ -232,6 +232,27 @@ app.get('/api/analytics/monthly', (req, res) => {
   });
 });
 
+// COMPANY SETTINGS ROUTES
+app.get('/api/settings', (req, res) => {
+  db.get('SELECT * FROM company_settings ORDER BY id DESC LIMIT 1', (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(row || { company_name: 'Rubber Glue Sales', address: '', phone: '', email: '' });
+  });
+});
+
+app.post('/api/settings', (req, res) => {
+  const { company_name, address, phone, email } = req.body;
+  
+  db.run(`INSERT OR REPLACE INTO company_settings (id, company_name, address, phone, email, updated_at) 
+          VALUES (1, ?, ?, ?, ?, datetime('now'))`,
+    [company_name, address, phone, email],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Settings updated successfully' });
+    }
+  );
+});
+
 // BACKUP & RESTORE ROUTES
 app.get('/api/backup', (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);

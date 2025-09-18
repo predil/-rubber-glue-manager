@@ -63,16 +63,28 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
     return batch.glue_separated - totalSold;
   };
 
-  const printBill = (sale) => {
+  const printBill = async (sale) => {
     const customer = customers.find(c => c.id === sale.customer_id);
     const batch = batches.find(b => b.id === sale.batch_id);
     
+    // Fetch company settings
+    let companySettings = { company_name: 'RUBBER GLUE SALES', address: '', phone: '', email: '' };
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/settings`);
+      companySettings = await response.json();
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+    
     const billContent = `
 ================================
-      RUBBER GLUE SALES
+      ${companySettings.company_name.toUpperCase()}
          INVOICE
 ================================
 
+${companySettings.address ? companySettings.address + '\n' : ''}${companySettings.phone ? 'Phone: ' + companySettings.phone + '\n' : ''}${companySettings.email ? 'Email: ' + companySettings.email + '\n' : ''}
+--------------------------------
 Date: ${sale.sale_date}
 Invoice #: ${sale.id.toString().padStart(4, '0')}
 
@@ -95,9 +107,6 @@ TOTAL AMOUNT: LKR ${sale.total_amount.toLocaleString()}
 
 --------------------------------
 Thank you for your business!
-
-For queries, contact:
-[Your Contact Info]
 
 ================================
     `;

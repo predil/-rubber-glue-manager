@@ -52,6 +52,24 @@ db.serialize(() => {
     FOREIGN KEY (sale_id) REFERENCES sales (id)
   )`);
 
+  // Company settings table
+  db.run(`CREATE TABLE IF NOT EXISTS company_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_name TEXT DEFAULT 'Rubber Glue Sales',
+    address TEXT,
+    phone TEXT,
+    email TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Insert default company settings if not exists
+  db.get('SELECT COUNT(*) as count FROM company_settings', (err, row) => {
+    if (!err && row.count === 0) {
+      db.run(`INSERT INTO company_settings (company_name, address, phone, email) 
+              VALUES ('Rubber Glue Sales', 'Your Address Here', 'Your Phone', 'your@email.com')`);
+    }
+  });
+
   // Create trigger to auto-increment batch_number
   db.run(`CREATE TRIGGER IF NOT EXISTS auto_batch_number 
     AFTER INSERT ON batches 

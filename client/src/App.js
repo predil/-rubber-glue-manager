@@ -8,6 +8,7 @@ import BasicAnalytics from './components/BasicAnalytics';
 import BackupRestore from './components/BackupRestore';
 import RecipeCalculator from './components/RecipeCalculator';
 import ReturnsManager from './components/ReturnsManager';
+import Settings from './components/Settings';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -83,7 +84,8 @@ function App() {
     { id: 'sales', label: 'Sales', icon: '💰' },
     { id: 'returns', label: 'Returns', icon: '🔄' },
     { id: 'analytics', label: 'Reports', icon: '📊' },
-    { id: 'backup', label: 'Backup', icon: '💾' }
+    { id: 'backup', label: 'Backup', icon: '💾' },
+    { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
 
   return (
@@ -154,6 +156,9 @@ function App() {
             fetchCustomers();
             fetchSales();
           }} />
+        )}
+        {activeTab === 'settings' && (
+          <Settings />
         )}
       </main>
     </div>
