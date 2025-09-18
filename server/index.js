@@ -2,9 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./postgres-db');
 const { initializeSampleData } = require('./init-data');
+const XLSX = require('xlsx');
+const multer = require('multer');
 
 // Initialize sample data on startup
 setTimeout(initializeSampleData, 1000);
+
+// Configure multer for file uploads
+const upload = multer({ dest: 'uploads/' });
 
 const app = express();
 const PORT = 5000;
@@ -182,6 +187,175 @@ app.get('/api/analytics/monthly', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
+});
+
+// BACKUP & RESTORE ROUTES
+app.get('/api/backup', (req, res) => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = `rubber-glue-backup-${timestamp}.xlsx`;
+  
+  // Get all data
+  Promise.all([
+    new Promise((resolve, reject) => {
+      db.all('SELECT * FROM batches ORDER BY batch_number', (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    }),
+    new Promise((resolve, reject) => {
+      db.all('SELECT * FROM customers ORDER BY name', (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    }),
+    new Promise((resolve, reject) => {
+      db.all(`SELECT s.*, b.batch_number, c.name as customer_name 
+              FROM sales s 
+              JOIN batches b ON s.batch_id = b.id 
+              JOIN customers c ON s.customer_id = c.id 
+              ORDER BY s.sale_date DESC`, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    })
+  ])
+  .then(([batches, customers, sales]) => {
+    // Create Excel workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Add batches sheet
+    const batchesWS = XLSX.utils.json_to_sheet(batches);
+    XLSX.utils.book_append_sheet(wb, batchesWS, 'Batches');
+    
+    // Add customers sheet
+    const customersWS = XLSX.utils.json_to_sheet(customers);
+    XLSX.utils.book_append_sheet(wb, customersWS, 'Customers');
+    
+    // Add sales sheet
+    const salesWS = XLSX.utils.json_to_sheet(sales);
+    XLSX.utils.book_append_sheet(wb, salesWS, 'Sales');
+    
+    // Generate buffer
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Send file
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  })
+  .catch(error => {
+    console.error('Backup error:', error);
+    res.status(500).json({ error: 'Failed to create backup' });
+  });
+});
+
+app.post('/api/restore', upload.single('backup'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No backup file provided' });
+  }
+  
+  try {
+    // Read Excel file
+    const workbook = XLSX.readFile(req.file.path);
+    
+    // Get data from sheets
+    const batches = XLSX.utils.sheet_to_json(workbook.Sheets['Batches'] || {});
+    const customers = XLSX.utils.sheet_to_json(workbook.Sheets['Customers'] || {});
+    const sales = XLSX.utils.sheet_to_json(workbook.Sheets['Sales'] || {});
+    
+    // Clear existing data
+    db.run('DELETE FROM sales', (err) => {
+      if (err) throw err;
+      
+      db.run('DELETE FROM batches', (err) => {
+        if (err) throw err;
+        
+        db.run('DELETE FROM customers', (err) => {
+          if (err) throw err;
+          
+          // Insert customers first
+          let customersInserted = 0;
+          customers.forEach(customer => {
+            db.run('INSERT INTO customers (id, name, contact_info) VALUES ($1, $2, $3)',
+              [customer.id, customer.name, customer.contact_info || ''], (err) => {
+                if (err) console.error('Customer insert error:', err);
+                customersInserted++;
+                
+                if (customersInserted === customers.length) {
+                  // Insert batches
+                  let batchesInserted = 0;
+                  batches.forEach(batch => {
+                    db.run(`INSERT INTO batches (id, batch_number, latex_quantity, glue_separated, 
+                            production_date, cost_to_prepare, selling_price_per_kg, notes) 
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                      [batch.id, batch.batch_number, batch.latex_quantity, batch.glue_separated,
+                       batch.production_date, batch.cost_to_prepare, batch.selling_price_per_kg, batch.notes || ''], (err) => {
+                        if (err) console.error('Batch insert error:', err);
+                        batchesInserted++;
+                        
+                        if (batchesInserted === batches.length) {
+                          // Insert sales
+                          let salesInserted = 0;
+                          sales.forEach(sale => {
+                            db.run(`INSERT INTO sales (id, batch_id, customer_id, quantity_sold, 
+                                    price_per_kg, sale_date, total_amount) 
+                                    VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                              [sale.id, sale.batch_id, sale.customer_id, sale.quantity_sold,
+                               sale.price_per_kg, sale.sale_date, sale.total_amount], (err) => {
+                                if (err) console.error('Sale insert error:', err);
+                                salesInserted++;
+                                
+                                if (salesInserted === sales.length) {
+                                  res.json({ 
+                                    message: 'Data restored successfully',
+                                    batches: batches.length,
+                                    customers: customers.length,
+                                    sales: sales.length
+                                  });
+                                }
+                              });
+                          });
+                          
+                          if (sales.length === 0) {
+                            res.json({ 
+                              message: 'Data restored successfully',
+                              batches: batches.length,
+                              customers: customers.length,
+                              sales: 0
+                            });
+                          }
+                        }
+                      });
+                  });
+                  
+                  if (batches.length === 0) {
+                    res.json({ 
+                      message: 'Data restored successfully',
+                      batches: 0,
+                      customers: customers.length,
+                      sales: 0
+                    });
+                  }
+                }
+              });
+          });
+          
+          if (customers.length === 0) {
+            res.json({ 
+              message: 'Data restored successfully',
+              batches: 0,
+              customers: 0,
+              sales: 0
+            });
+          }
+        });
+      });
+    });
+    
+  } catch (error) {
+    console.error('Restore error:', error);
+    res.status(500).json({ error: 'Failed to restore backup: ' + error.message });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

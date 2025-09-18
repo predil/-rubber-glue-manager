@@ -5,6 +5,7 @@ import BatchManager from './components/BatchManager';
 import CustomerManager from './components/CustomerManager';
 import SalesManager from './components/SalesManager';
 import BasicAnalytics from './components/BasicAnalytics';
+import BackupRestore from './components/BackupRestore';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -77,7 +78,8 @@ function App() {
     { id: 'batches', label: 'Production', icon: '🏭' },
     { id: 'customers', label: 'Customers', icon: '👥' },
     { id: 'sales', label: 'Sales', icon: '💰' },
-    { id: 'analytics', label: 'Reports', icon: '📊' }
+    { id: 'analytics', label: 'Reports', icon: '📊' },
+    { id: 'backup', label: 'Backup', icon: '💾' }
   ];
 
   return (
@@ -129,6 +131,13 @@ function App() {
         )}
         {activeTab === 'analytics' && (
           <BasicAnalytics batches={batches} sales={sales} />
+        )}
+        {activeTab === 'backup' && (
+          <BackupRestore onUpdate={() => {
+            fetchBatches();
+            fetchCustomers();
+            fetchSales();
+          }} />
         )}
       </main>
     </div>
