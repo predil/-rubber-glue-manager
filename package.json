@@ -7,8 +7,7 @@
     "client": "cd client && npm start",
     "build": "cd client && npm install && npm run build",
     "setup": "npm install && cd server && npm install && cd ../client && npm install",
-    "seed": "cd server && node seed.js",
-    "vercel-build": "npm run build"
+    "seed": "cd server && node seed.js"
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
