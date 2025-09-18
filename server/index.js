@@ -15,12 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: [
-    'https://client-7hta8c7x5-predils-projects.vercel.app',
-    'https://rubber-glue-manager-eeg2phkp2-predils-projects.vercel.app',
-    'https://rubber-glue-manager-6id2nid4e-predils-projects.vercel.app', 
-    'http://localhost:3000'
-  ],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
