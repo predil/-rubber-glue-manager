@@ -12,7 +12,7 @@ function Login({ onLogin }) {
     setError('');
     
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/login`, {
+      const response = await fetch('/api/server/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -124,7 +124,7 @@ function Login({ onLogin }) {
           fontSize: '0.8rem', 
           color: '#666' 
         }}>
-          Demo: admin / admin123
+          Demo: admin / password
         </div>
       </div>
     </div>
