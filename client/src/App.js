@@ -6,6 +6,7 @@ import CustomerManager from './components/CustomerManager';
 import SalesManager from './components/SalesManager';
 import BasicAnalytics from './components/BasicAnalytics';
 import BackupRestore from './components/BackupRestore';
+import RecipeCalculator from './components/RecipeCalculator';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -76,6 +77,7 @@ function App() {
 
   const tabs = [
     { id: 'batches', label: 'Production', icon: '🏭' },
+    { id: 'recipe', label: 'Recipe', icon: '🧪' },
     { id: 'customers', label: 'Customers', icon: '👥' },
     { id: 'sales', label: 'Sales', icon: '💰' },
     { id: 'analytics', label: 'Reports', icon: '📊' },
@@ -117,6 +119,9 @@ function App() {
       <main className="app-main">
         {activeTab === 'batches' && (
           <BatchManager batches={batches} onUpdate={fetchBatches} />
+        )}
+        {activeTab === 'recipe' && (
+          <RecipeCalculator />
         )}
         {activeTab === 'customers' && (
           <CustomerManager customers={customers} onUpdate={fetchCustomers} />
