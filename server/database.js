@@ -83,8 +83,9 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Monthly costs table (only labour now)
-  db.run(`CREATE TABLE IF NOT EXISTS monthly_costs (
+  // Drop and recreate monthly_costs table to fix schema
+  db.run(`DROP TABLE IF EXISTS monthly_costs`);
+  db.run(`CREATE TABLE monthly_costs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     month_year TEXT NOT NULL,
     labour_cost REAL NOT NULL,
