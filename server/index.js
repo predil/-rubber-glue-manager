@@ -263,15 +263,38 @@ app.get('/api/monthly-costs', (req, res) => {
 });
 
 app.post('/api/monthly-costs', (req, res) => {
-  const { month_year, labour_cost, transportation_cost, other_costs } = req.body;
+  const { month_year, labour_cost, other_costs } = req.body;
   
   db.run(`INSERT OR REPLACE INTO monthly_costs 
-          (month_year, labour_cost, transportation_cost, other_costs)
-          VALUES (?, ?, ?, ?)`,
-    [month_year, labour_cost, transportation_cost, other_costs || 0],
+          (month_year, labour_cost, other_costs)
+          VALUES (?, ?, ?)`,
+    [month_year, labour_cost, other_costs || 0],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: 'Monthly costs updated successfully' });
+    }
+  );
+});
+
+app.get('/api/latex-transport', (req, res) => {
+  db.all('SELECT * FROM latex_transport ORDER BY transport_date DESC', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/latex-transport', (req, res) => {
+  const { transport_date, total_cans, transport_cost, notes } = req.body;
+  const total_latex_kg = total_cans * 20; // 20kg per can
+  const cost_per_kg = transport_cost / total_latex_kg;
+  
+  db.run(`INSERT INTO latex_transport 
+          (transport_date, total_cans, total_latex_kg, transport_cost, cost_per_kg, notes)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+    [transport_date, total_cans, total_latex_kg, transport_cost, cost_per_kg, notes || ''],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: this.lastID, message: 'Transport record added successfully' });
     }
   );
 });
@@ -289,49 +312,57 @@ app.post('/api/calculate-batch-cost', (req, res) => {
       return res.status(400).json({ error: 'Monthly costs not set for ' + monthYear });
     }
     
-    // Calculate chemical costs based on recipe
-    const ratio = latex_quantity / 170; // Base recipe for 170kg
-    const chemicalUsage = {
-      'Coconut Oil': 0.19 * ratio,
-      'KOH': 0.05 * ratio,
-      'HEC': 0.135 * ratio,
-      'Sodium Benzoate': 0.17 * ratio,
-      'Ammonia': 0.1 * ratio // Estimated ammonia usage
-    };
-    
-    // Get chemical costs
-    db.all('SELECT * FROM chemical_inventory', (err, chemicals) => {
+    // Get latest transport cost per kg
+    db.get('SELECT * FROM latex_transport ORDER BY transport_date DESC LIMIT 1', (err, transport) => {
       if (err) return res.status(500).json({ error: err.message });
       
-      let totalChemicalCost = 0;
-      const chemicalBreakdown = {};
+      const transportCostPerKg = transport ? transport.cost_per_kg : 0;
       
-      Object.keys(chemicalUsage).forEach(chemName => {
-        const chemical = chemicals.find(c => c.chemical_name === chemName);
-        if (chemical) {
-          const cost = chemicalUsage[chemName] * chemical.cost_per_unit;
-          totalChemicalCost += cost;
-          chemicalBreakdown[chemName] = {
-            quantity: chemicalUsage[chemName],
-            unit: chemical.unit,
-            cost: cost
-          };
-        }
-      });
-      
-      // Assume 30 working days per month, distribute monthly costs
-      const dailyLabour = monthlyCosts.labour_cost / 30;
-      const dailyTransport = monthlyCosts.transportation_cost / 30;
-      
-      const batchCosts = {
-        labour_cost: dailyLabour,
-        transportation_cost: dailyTransport,
-        chemical_cost: totalChemicalCost,
-        total_cost: dailyLabour + dailyTransport + totalChemicalCost,
-        chemical_breakdown: chemicalBreakdown
+      // Calculate chemical costs based on recipe
+      const ratio = latex_quantity / 170; // Base recipe for 170kg
+      const chemicalUsage = {
+        'Coconut Oil': 0.19 * ratio,
+        'KOH': 0.05 * ratio,
+        'HEC': 0.135 * ratio,
+        'Sodium Benzoate': 0.17 * ratio,
+        'Ammonia': 0.1 * ratio // Estimated ammonia usage
       };
       
-      res.json(batchCosts);
+      // Get chemical costs
+      db.all('SELECT * FROM chemical_inventory', (err, chemicals) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        let totalChemicalCost = 0;
+        const chemicalBreakdown = {};
+        
+        Object.keys(chemicalUsage).forEach(chemName => {
+          const chemical = chemicals.find(c => c.chemical_name === chemName);
+          if (chemical) {
+            const cost = chemicalUsage[chemName] * chemical.cost_per_unit;
+            totalChemicalCost += cost;
+            chemicalBreakdown[chemName] = {
+              quantity: chemicalUsage[chemName],
+              unit: chemical.unit,
+              cost: cost
+            };
+          }
+        });
+        
+        // Calculate costs
+        const dailyLabour = monthlyCosts.labour_cost / 30;
+        const transportationCost = latex_quantity * transportCostPerKg;
+        
+        const batchCosts = {
+          labour_cost: dailyLabour,
+          transportation_cost: transportationCost,
+          chemical_cost: totalChemicalCost,
+          total_cost: dailyLabour + transportationCost + totalChemicalCost,
+          chemical_breakdown: chemicalBreakdown,
+          transport_per_kg: transportCostPerKg
+        };
+        
+        res.json(batchCosts);
+      });
     });
   });
 });

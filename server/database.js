@@ -83,13 +83,24 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Monthly costs table
+  // Monthly costs table (only labour now)
   db.run(`CREATE TABLE IF NOT EXISTS monthly_costs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     month_year TEXT NOT NULL,
     labour_cost REAL NOT NULL,
-    transportation_cost REAL NOT NULL,
     other_costs REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Latex transport table (batch-wise)
+  db.run(`CREATE TABLE IF NOT EXISTS latex_transport (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transport_date TEXT NOT NULL,
+    total_cans INTEGER NOT NULL,
+    total_latex_kg REAL NOT NULL,
+    transport_cost REAL NOT NULL,
+    cost_per_kg REAL NOT NULL,
+    notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
