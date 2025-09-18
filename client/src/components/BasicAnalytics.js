@@ -51,6 +51,13 @@ function BasicAnalytics({ batches, sales }) {
           </div>
           
           <div className="stat-card">
+            <div className="stat-value">
+              {batches ? batches.reduce((sum, b) => sum + (parseFloat(b.glue_separated) || 0), 0).toFixed(1) : 0}
+            </div>
+            <div className="stat-label">Total Glue Produced (kg)</div>
+          </div>
+          
+          <div className="stat-card">
             <div className="stat-value currency">
               {sales ? sales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0).toLocaleString() : 0}
             </div>
