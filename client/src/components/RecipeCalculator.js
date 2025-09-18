@@ -205,7 +205,17 @@ function RecipeCalculator() {
                 borderRadius: '8px'
               }}>
                 <h4>✅ Final Product</h4>
-                <p><strong>Total Latex Glue:</strong> Approximately {(recipe.latex * 1.2).toFixed(1)}kg</p>
+                <p><strong>Total Latex Glue:</strong> Approximately {(
+                  recipe.latex + 
+                  recipe.coconutOil/1000 + 
+                  recipe.waterForOil/1000 + 
+                  recipe.koh/1000 + 
+                  recipe.waterForKoh/1000 + 
+                  recipe.hec/1000 + 
+                  recipe.waterForHec/1000 + 
+                  recipe.sodiumBenzoate/1000 + 
+                  recipe.waterForPreservative/1000
+                ).toFixed(1)}kg</p>
                 <p><strong>Processing Time:</strong> ~1 hour (mixing + preparation)</p>
                 <p><strong>Temperature:</strong> All water should be at 50°C for optimal mixing</p>
               </div>

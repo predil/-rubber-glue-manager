@@ -65,6 +65,19 @@ if (usePostgres) {
         $$ LANGUAGE plpgsql;
       `);
 
+      // Returns table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS returns (
+          id SERIAL PRIMARY KEY,
+          sale_id INTEGER NOT NULL REFERENCES sales(id),
+          return_date DATE NOT NULL,
+          quantity_returned DECIMAL NOT NULL,
+          reason TEXT,
+          refund_amount DECIMAL NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // Create trigger
       await pool.query(`
         DROP TRIGGER IF EXISTS auto_batch_number ON batches;

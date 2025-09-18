@@ -7,6 +7,7 @@ import SalesManager from './components/SalesManager';
 import BasicAnalytics from './components/BasicAnalytics';
 import BackupRestore from './components/BackupRestore';
 import RecipeCalculator from './components/RecipeCalculator';
+import ReturnsManager from './components/ReturnsManager';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -80,6 +81,7 @@ function App() {
     { id: 'recipe', label: 'Recipe', icon: '🧪' },
     { id: 'customers', label: 'Customers', icon: '👥' },
     { id: 'sales', label: 'Sales', icon: '💰' },
+    { id: 'returns', label: 'Returns', icon: '🔄' },
     { id: 'analytics', label: 'Reports', icon: '📊' },
     { id: 'backup', label: 'Backup', icon: '💾' }
   ];
@@ -132,6 +134,15 @@ function App() {
             batches={batches} 
             customers={customers} 
             onUpdate={fetchSales} 
+          />
+        )}
+        {activeTab === 'returns' && (
+          <ReturnsManager 
+            sales={sales} 
+            onUpdate={() => {
+              fetchSales();
+              fetchBatches();
+            }} 
           />
         )}
         {activeTab === 'analytics' && (
