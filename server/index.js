@@ -869,13 +869,17 @@ app.get('/api/chemicals', (req, res) => {
 
 app.get('/api/chemicals/low-stock', (req, res) => {
   // Check for chemicals with less than 20% remaining
+  if (!db || !db.all) {
+    return res.status(500).json({ error: 'Database not initialized' });
+  }
+  
   db.all(`SELECT *, 
           (remaining_quantity / quantity_purchased * 100) as stock_percentage
           FROM chemical_inventory 
           WHERE (remaining_quantity / quantity_purchased * 100) < 20
-          ORDER BY stock_percentage ASC`, (err, rows) => {
+          ORDER BY stock_percentage ASC`, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+    res.json(rows || []);
   });
 });
 
