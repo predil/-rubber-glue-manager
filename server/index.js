@@ -235,6 +235,241 @@ app.get('/api/analytics/summary', (req, res) => {
   });
 });
 
+// Predictive Analytics Routes
+app.get('/api/analytics/demand-forecast', (req, res) => {
+  const query = `
+    SELECT 
+      DATE(sale_date) as date,
+      SUM(quantity_sold) as daily_sales,
+      COUNT(*) as transaction_count,
+      AVG(quantity_sold) as avg_transaction_size
+    FROM sales 
+    WHERE sale_date >= date('now', '-90 days')
+    GROUP BY DATE(sale_date)
+    ORDER BY date
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    // Simple linear regression for trend
+    const n = rows.length;
+    if (n < 7) {
+      res.json({ forecast: [], trend: 'insufficient_data', confidence: 0 });
+      return;
+    }
+    
+    const sumX = rows.reduce((sum, _, i) => sum + i, 0);
+    const sumY = rows.reduce((sum, row) => sum + row.daily_sales, 0);
+    const sumXY = rows.reduce((sum, row, i) => sum + (i * row.daily_sales), 0);
+    const sumX2 = rows.reduce((sum, _, i) => sum + (i * i), 0);
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    // Generate 30-day forecast
+    const forecast = [];
+    for (let i = 0; i < 30; i++) {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + i + 1);
+      const predicted = Math.max(0, intercept + slope * (n + i));
+      forecast.push({
+        date: futureDate.toISOString().split('T')[0],
+        predicted_sales: Math.round(predicted * 100) / 100
+      });
+    }
+    
+    const trend = slope > 0.1 ? 'increasing' : slope < -0.1 ? 'decreasing' : 'stable';
+    const avgSales = sumY / n;
+    const confidence = Math.min(95, Math.max(30, 100 - (Math.abs(slope) / avgSales * 100)));
+    
+    res.json({ forecast, trend, confidence: Math.round(confidence), historical: rows });
+  });
+});
+
+app.get('/api/analytics/optimal-batch-size', (req, res) => {
+  const query = `
+    SELECT 
+      b.latex_quantity,
+      b.glue_separated,
+      bc.total_cost,
+      (b.glue_separated * b.selling_price_per_kg - bc.total_cost) as profit,
+      (b.glue_separated * b.selling_price_per_kg - bc.total_cost) / bc.total_cost * 100 as profit_margin,
+      b.glue_separated / b.latex_quantity as conversion_rate
+    FROM batches b
+    JOIN batch_costs bc ON b.id = bc.batch_id
+    WHERE b.latex_quantity > 0 AND bc.total_cost > 0
+    ORDER BY b.production_date DESC
+    LIMIT 50
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (rows.length < 5) {
+      res.json({ recommendation: 'insufficient_data', optimal_size: null });
+      return;
+    }
+    
+    // Group by latex quantity ranges
+    const ranges = {
+      '50-100': [], '100-150': [], '150-200': [], '200-250': [], '250+': []
+    };
+    
+    rows.forEach(row => {
+      const qty = row.latex_quantity;
+      if (qty <= 100) ranges['50-100'].push(row);
+      else if (qty <= 150) ranges['100-150'].push(row);
+      else if (qty <= 200) ranges['150-200'].push(row);
+      else if (qty <= 250) ranges['200-250'].push(row);
+      else ranges['250+'].push(row);
+    });
+    
+    // Calculate average metrics for each range
+    const analysis = Object.entries(ranges)
+      .filter(([_, data]) => data.length > 0)
+      .map(([range, data]) => ({
+        range,
+        count: data.length,
+        avg_profit_margin: data.reduce((sum, r) => sum + r.profit_margin, 0) / data.length,
+        avg_conversion_rate: data.reduce((sum, r) => sum + r.conversion_rate, 0) / data.length,
+        avg_profit: data.reduce((sum, r) => sum + r.profit, 0) / data.length
+      }));
+    
+    // Find optimal range
+    const optimal = analysis.reduce((best, current) => 
+      current.avg_profit_margin > best.avg_profit_margin ? current : best
+    );
+    
+    res.json({ 
+      analysis, 
+      optimal_range: optimal.range,
+      recommendation: `Optimal batch size: ${optimal.range}kg latex`,
+      expected_margin: Math.round(optimal.avg_profit_margin * 100) / 100
+    });
+  });
+});
+
+app.get('/api/analytics/chemical-reorder-alerts', (req, res) => {
+  const query = `
+    SELECT 
+      chemical_name,
+      remaining_quantity,
+      unit,
+      cost_per_unit,
+      (SELECT AVG(usage) FROM (
+        SELECT 
+          CASE chemical_name
+            WHEN 'Coconut Oil' THEN (b.latex_quantity * 0.19 / 17)
+            WHEN 'KOH' THEN (b.latex_quantity * 0.05 / 17)
+            WHEN 'HEC' THEN (b.latex_quantity * 0.135 / 17)
+            WHEN 'Sodium Benzoate' THEN (b.latex_quantity * 0.17 / 17)
+            WHEN 'Ammonia' THEN (b.latex_quantity * 0.1 / 17)
+          END as usage
+        FROM batches b
+        WHERE b.production_date >= date('now', '-30 days')
+      ) WHERE usage IS NOT NULL) as avg_daily_usage
+    FROM chemical_inventory
+    GROUP BY chemical_name
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    const alerts = rows.map(row => {
+      const dailyUsage = row.avg_daily_usage || 0;
+      const daysRemaining = dailyUsage > 0 ? Math.floor(row.remaining_quantity / dailyUsage) : 999;
+      const reorderPoint = dailyUsage * 14; // 2 weeks buffer
+      const suggestedOrder = Math.max(reorderPoint * 2, row.remaining_quantity * 0.5);
+      
+      return {
+        chemical: row.chemical_name,
+        current_stock: row.remaining_quantity,
+        unit: row.unit,
+        days_remaining: daysRemaining,
+        daily_usage: Math.round(dailyUsage * 1000) / 1000,
+        reorder_needed: row.remaining_quantity <= reorderPoint,
+        suggested_order_qty: Math.round(suggestedOrder * 100) / 100,
+        estimated_cost: Math.round(suggestedOrder * row.cost_per_unit),
+        urgency: daysRemaining <= 7 ? 'high' : daysRemaining <= 14 ? 'medium' : 'low'
+      };
+    });
+    
+    res.json({ alerts, total_reorder_cost: alerts.reduce((sum, a) => sum + (a.reorder_needed ? a.estimated_cost : 0), 0) });
+  });
+});
+
+app.get('/api/analytics/price-optimization', (req, res) => {
+  const query = `
+    SELECT 
+      b.selling_price_per_kg,
+      AVG(s.quantity_sold) as avg_quantity_sold,
+      COUNT(s.id) as sales_count,
+      SUM(s.quantity_sold) as total_sold,
+      bc.total_cost / b.glue_separated as cost_per_kg,
+      (b.selling_price_per_kg - bc.total_cost / b.glue_separated) as profit_per_kg
+    FROM batches b
+    JOIN batch_costs bc ON b.id = bc.batch_id
+    LEFT JOIN sales s ON b.id = s.batch_id
+    WHERE b.production_date >= date('now', '-90 days')
+    GROUP BY b.selling_price_per_kg, bc.total_cost / b.glue_separated
+    HAVING sales_count > 0
+    ORDER BY b.selling_price_per_kg
+  `;
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (rows.length < 3) {
+      res.json({ recommendation: 'insufficient_data', optimal_price: null });
+      return;
+    }
+    
+    // Calculate price elasticity and optimal price
+    const priceAnalysis = rows.map(row => ({
+      price: row.selling_price_per_kg,
+      demand: row.total_sold,
+      profit_per_kg: row.profit_per_kg,
+      total_profit: row.total_sold * row.profit_per_kg,
+      sales_velocity: row.total_sold / 90 // daily average
+    }));
+    
+    // Find price with highest total profit
+    const optimalPrice = priceAnalysis.reduce((best, current) => 
+      current.total_profit > best.total_profit ? current : best
+    );
+    
+    // Calculate current average cost
+    const avgCostPerKg = rows.reduce((sum, r) => sum + r.cost_per_kg, 0) / rows.length;
+    const minPrice = avgCostPerKg * 1.2; // 20% minimum margin
+    const maxPrice = avgCostPerKg * 2.5; // 150% maximum margin
+    
+    res.json({
+      price_analysis: priceAnalysis,
+      optimal_price: optimalPrice.price,
+      current_avg_cost: Math.round(avgCostPerKg),
+      recommended_range: {
+        min: Math.round(minPrice),
+        max: Math.round(maxPrice)
+      },
+      recommendation: `Optimal price: LKR ${optimalPrice.price}/kg for maximum profit`,
+      expected_daily_sales: Math.round(optimalPrice.sales_velocity * 100) / 100
+    });
+  });
+});
+
 // Advanced Analytics Routes
 app.get('/api/analytics/profit-trends', (req, res) => {
   const query = `
