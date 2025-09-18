@@ -63,6 +63,83 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
     return batch.glue_separated - totalSold;
   };
 
+  const printBill = (sale) => {
+    const customer = customers.find(c => c.id === sale.customer_id);
+    const batch = batches.find(b => b.id === sale.batch_id);
+    
+    const billContent = `
+================================
+      RUBBER GLUE SALES
+         INVOICE
+================================
+
+Date: ${sale.sale_date}
+Invoice #: ${sale.id.toString().padStart(4, '0')}
+
+--------------------------------
+CUSTOMER DETAILS:
+${customer ? customer.name : 'N/A'}
+${customer ? customer.contact_info : ''}
+
+--------------------------------
+PRODUCT DETAILS:
+Batch #: ${sale.batch_number}
+Production: ${batch ? batch.production_date : 'N/A'}
+
+Rubber Latex Glue
+Quantity: ${sale.quantity_sold} kg
+Price/kg: LKR ${sale.price_per_kg}
+
+--------------------------------
+TOTAL AMOUNT: LKR ${sale.total_amount.toLocaleString()}
+
+--------------------------------
+Thank you for your business!
+
+For queries, contact:
+[Your Contact Info]
+
+================================
+    `;
+    
+    // Create printable window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice #${sale.id.toString().padStart(4, '0')}</title>
+          <style>
+            body {
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              line-height: 1.2;
+              margin: 0;
+              padding: 10px;
+              width: 58mm;
+              background: white;
+            }
+            .bill {
+              white-space: pre-line;
+            }
+            @media print {
+              body { margin: 0; padding: 5px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="bill">${billContent}</div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(() => window.close(), 1000);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="section">
       <div className="section-title">
@@ -171,6 +248,7 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
             <th>Quantity (kg)</th>
             <th>Price/kg (LKR)</th>
             <th>Total (LKR)</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -182,6 +260,15 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
               <td>{sale.quantity_sold}</td>
               <td className="currency">{sale.price_per_kg}</td>
               <td className="currency">{sale.total_amount.toLocaleString()}</td>
+              <td>
+                <button 
+                  className="btn btn-secondary btn-small"
+                  onClick={() => printBill(sale)}
+                  style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                >
+                  🖨️ Print
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
