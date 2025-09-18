@@ -11,9 +11,7 @@ import ReturnsManager from './components/ReturnsManager';
 import Settings from './components/Settings';
 import CostManager from './components/CostManager';
 import LowStockAlert from './components/LowStockAlert';
-import AdvancedReports from './components/AdvancedReports';
-import PredictiveAnalytics from './components/PredictiveAnalytics';
-import SmartFeatures from './components/SmartFeatures';
+import AllReports from './components/AllReports';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -89,10 +87,7 @@ function App() {
     { id: 'customers', label: 'Customers', icon: '👥' },
     { id: 'sales', label: 'Sales', icon: '💵' },
     { id: 'returns', label: 'Returns', icon: '🔄' },
-    { id: 'analytics', label: 'Reports', icon: '📊' },
-    { id: 'advanced-reports', label: 'Analytics', icon: '📈' },
-    { id: 'predictive', label: 'Predictive', icon: '🔮' },
-    { id: 'smart', label: 'Smart AI', icon: '🧠' },
+    { id: 'reports', label: 'Reports', icon: '📊' },
     { id: 'backup', label: 'Backup', icon: '💾' },
     { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
@@ -159,17 +154,8 @@ function App() {
             }} 
           />
         )}
-        {activeTab === 'analytics' && (
-          <BasicAnalytics batches={batches} sales={sales} />
-        )}
-        {activeTab === 'advanced-reports' && (
-          <AdvancedReports />
-        )}
-        {activeTab === 'predictive' && (
-          <PredictiveAnalytics />
-        )}
-        {activeTab === 'smart' && (
-          <SmartFeatures />
+        {activeTab === 'reports' && (
+          <AllReports batches={batches} sales={sales} />
         )}
         {activeTab === 'backup' && (
           <BackupRestore onUpdate={() => {
