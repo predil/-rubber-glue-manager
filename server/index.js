@@ -12,7 +12,7 @@ const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors({
   origin: ['https://rubber-glue-manager-6id2nid4e-predils-projects.vercel.app', 'http://localhost:3000'],
@@ -21,6 +21,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'Rubber Glue API Server', status: 'running', database: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite' });
+});
 
 // Add request logging
 app.use((req, res, next) => {
