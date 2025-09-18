@@ -11,6 +11,13 @@ function BatchManager({ batches, onUpdate }) {
     selling_price_per_kg: '',
     notes: ''
   });
+  
+  const [costBreakdown, setCostBreakdown] = useState({
+    chemical_cost: 0,
+    transport_cost: 0,
+    labour_cost: 0,
+    total_cost: 0
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,6 +78,12 @@ function BatchManager({ batches, onUpdate }) {
       selling_price_per_kg: '',
       notes: ''
     });
+    setCostBreakdown({
+      chemical_cost: 0,
+      transport_cost: 0,
+      labour_cost: 0,
+      total_cost: 0
+    });
     setEditingBatch(null);
     setShowForm(false);
   };
@@ -93,6 +106,50 @@ function BatchManager({ batches, onUpdate }) {
   };
 
   const averageRate = getAverageProductionRate();
+
+  // Calculate costs when latex quantity or production date changes
+  const calculateCosts = async () => {
+    if (!formData.latex_quantity || !formData.production_date) {
+      setCostBreakdown({ chemical_cost: 0, transport_cost: 0, labour_cost: 0, total_cost: 0 });
+      return;
+    }
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/calculate-batch-cost`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          latex_quantity: parseFloat(formData.latex_quantity),
+          production_date: formData.production_date
+        })
+      });
+      
+      if (response.ok) {
+        const costs = await response.json();
+        setCostBreakdown({
+          chemical_cost: costs.chemical_cost,
+          transport_cost: costs.transportation_cost,
+          labour_cost: costs.labour_cost,
+          total_cost: costs.total_cost
+        });
+        
+        // Auto-update the cost_to_prepare field
+        setFormData(prev => ({
+          ...prev,
+          cost_to_prepare: costs.total_cost.toFixed(2)
+        }));
+      }
+    } catch (error) {
+      console.error('Error calculating costs:', error);
+    }
+  };
+
+  // Recalculate costs when latex quantity or date changes
+  React.useEffect(() => {
+    const timeoutId = setTimeout(calculateCosts, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [formData.latex_quantity, formData.production_date]);
 
 
 
@@ -159,6 +216,46 @@ function BatchManager({ batches, onUpdate }) {
             />
           </div>
           
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Cost Breakdown</label>
+            <div style={{
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              padding: '1rem',
+              backgroundColor: '#f8f9fa'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.9rem', color: '#666' }}>Chemical Cost</label>
+                  <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+                    LKR {costBreakdown.chemical_cost.toFixed(2)}
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: '0.9rem', color: '#666' }}>Transport Cost</label>
+                  <div style={{ fontWeight: 'bold', color: '#17a2b8' }}>
+                    LKR {costBreakdown.transport_cost.toFixed(2)}
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: '0.9rem', color: '#666' }}>Labour Cost</label>
+                  <div style={{ fontWeight: 'bold', color: '#ffc107' }}>
+                    LKR {costBreakdown.labour_cost.toFixed(2)}
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: '0.9rem', color: '#666' }}>Total Cost</label>
+                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#dc3545' }}>
+                    LKR {costBreakdown.total_cost.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <div className="form-group">
             <label>Cost to Prepare (LKR)</label>
             <input
@@ -166,8 +263,10 @@ function BatchManager({ batches, onUpdate }) {
               step="0.01"
               value={formData.cost_to_prepare}
               onChange={(e) => setFormData({...formData, cost_to_prepare: e.target.value})}
+              style={{ backgroundColor: '#e9ecef' }}
               required
             />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>Auto-calculated from breakdown above</small>
           </div>
           
           <div className="form-group">
