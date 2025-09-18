@@ -1,9 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Use persistent storage path on Render, fallback to local for development
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'rubber_glue.db');
+// Use /tmp for Vercel serverless functions
+const dbPath = process.env.DATABASE_PATH || (process.env.VERCEL ? '/tmp/rubber_glue.db' : path.join(__dirname, 'rubber_glue.db'));
 console.log('Database path:', dbPath);
+console.log('Environment:', process.env.VERCEL ? 'Vercel' : 'Local');
 const db = new sqlite3.Database(dbPath);
 
 // Initialize database tables
