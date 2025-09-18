@@ -4,7 +4,7 @@ import Login from './components/Login';
 import BatchManager from './components/BatchManager';
 import CustomerManager from './components/CustomerManager';
 import SalesManager from './components/SalesManager';
-import Analytics from './components/Analytics';
+import SimpleAnalytics from './components/SimpleAnalytics';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -128,7 +128,7 @@ function App() {
           />
         )}
         {activeTab === 'analytics' && (
-          <Analytics batches={batches} sales={sales} />
+          <SimpleAnalytics batches={batches} sales={sales} />
         )}
       </main>
     </div>
