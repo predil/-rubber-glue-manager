@@ -28,6 +28,7 @@ if (process.env.DATABASE_URL) {
       pool.query(sql, params).then(result => callback(null, result.rows[0])).catch(callback);
     },
     all: (sql, params = [], callback) => {
+      if (!pool) return callback(new Error('Database not connected'));
       pool.query(sql, params).then(result => callback(null, result.rows)).catch(callback);
     },
     serialize: (fn) => fn()
