@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 
 // Simple demo users (in production, use proper password hashing)
 const users = {
-  admin: 'admin123',
+  admin: 'password',
   manager: 'manager123'
 };
 
