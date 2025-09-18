@@ -63,6 +63,28 @@ app.post('/api/batches', (req, res) => {
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       
+      // Update chemical inventory based on recipe usage
+      const ratio = latex_quantity / 170; // Base recipe for 170kg
+      const chemicalUsage = {
+        'Coconut Oil': 0.19 * ratio,
+        'KOH': 0.05 * ratio,
+        'HEC': 0.135 * ratio,
+        'Sodium Benzoate': 0.17 * ratio,
+        'Ammonia': 0.1 * ratio
+      };
+      
+      // Update remaining quantities
+      Object.keys(chemicalUsage).forEach(chemName => {
+        const usedAmount = chemicalUsage[chemName];
+        db.run(
+          'UPDATE chemical_inventory SET remaining_quantity = remaining_quantity - ? WHERE chemical_name = ? AND remaining_quantity >= ?',
+          [usedAmount, chemName, usedAmount],
+          (err) => {
+            if (err) console.error(`Error updating ${chemName}:`, err);
+          }
+        );
+      });
+      
       const batchId = this.lastID;
       db.get('SELECT * FROM batches WHERE id = $1', [batchId], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -235,6 +257,18 @@ app.get('/api/analytics/monthly', (req, res) => {
 // COST MANAGEMENT ROUTES
 app.get('/api/chemicals', (req, res) => {
   db.all('SELECT * FROM chemical_inventory ORDER BY chemical_name', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/chemicals/low-stock', (req, res) => {
+  // Check for chemicals with less than 20% remaining
+  db.all(`SELECT *, 
+          (remaining_quantity / quantity_purchased * 100) as stock_percentage
+          FROM chemical_inventory 
+          WHERE (remaining_quantity / quantity_purchased * 100) < 20
+          ORDER BY stock_percentage ASC`, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });

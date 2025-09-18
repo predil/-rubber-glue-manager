@@ -10,6 +10,7 @@ import RecipeCalculator from './components/RecipeCalculator';
 import ReturnsManager from './components/ReturnsManager';
 import Settings from './components/Settings';
 import CostManager from './components/CostManager';
+import LowStockAlert from './components/LowStockAlert';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -166,6 +167,9 @@ function App() {
           <Settings />
         )}
       </main>
+      
+      {/* Low Stock Alert - appears on all tabs */}
+      <LowStockAlert />
     </div>
   );
 }
