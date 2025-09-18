@@ -240,13 +240,12 @@ app.get('/api/smart/anomaly-detection', (req, res) => {
   const query = `
     SELECT 
       b.id, b.batch_number, b.latex_quantity, b.glue_separated,
-      b.production_date, bc.total_cost,
+      b.production_date, b.cost_to_prepare as total_cost,
       b.glue_separated / b.latex_quantity as conversion_rate,
-      bc.total_cost / b.glue_separated as cost_per_kg,
+      b.cost_to_prepare / b.glue_separated as cost_per_kg,
       (SELECT AVG(glue_separated / latex_quantity) FROM batches WHERE production_date >= date('now', '-30 days')) as avg_conversion,
-      (SELECT AVG(bc2.total_cost / b2.glue_separated) FROM batches b2 JOIN batch_costs bc2 ON b2.id = bc2.batch_id WHERE b2.production_date >= date('now', '-30 days')) as avg_cost_per_kg
+      (SELECT AVG(cost_to_prepare / glue_separated) FROM batches WHERE production_date >= date('now', '-30 days')) as avg_cost_per_kg
     FROM batches b
-    JOIN batch_costs bc ON b.id = bc.batch_id
     WHERE b.production_date >= date('now', '-60 days')
     ORDER BY b.production_date DESC
   `;
@@ -258,6 +257,7 @@ app.get('/api/smart/anomaly-detection', (req, res) => {
     }
     
     const anomalies = rows.filter(row => {
+      if (!row.avg_conversion || !row.avg_cost_per_kg) return false;
       const conversionDeviation = Math.abs(row.conversion_rate - row.avg_conversion) / row.avg_conversion;
       const costDeviation = Math.abs(row.cost_per_kg - row.avg_cost_per_kg) / row.avg_cost_per_kg;
       return conversionDeviation > 0.2 || costDeviation > 0.3;
@@ -271,7 +271,7 @@ app.get('/api/smart/anomaly-detection', (req, res) => {
       deviation: Math.round(Math.abs(row.conversion_rate - row.avg_conversion) / row.avg_conversion * 100)
     }));
     
-    res.json({ anomalies, total_batches: rows.length, anomaly_rate: Math.round(anomalies.length / rows.length * 100) });
+    res.json({ anomalies, total_batches: rows.length, anomaly_rate: rows.length > 0 ? Math.round(anomalies.length / rows.length * 100) : 0 });
   });
 });
 
@@ -282,13 +282,12 @@ app.get('/api/smart/pricing-suggestions', (req, res) => {
       COUNT(s.id) as sales_count,
       SUM(s.quantity_sold) as total_sold,
       AVG(s.quantity_sold) as avg_quantity,
-      bc.total_cost / b.glue_separated as cost_per_kg,
-      (b.selling_price_per_kg - bc.total_cost / b.glue_separated) as profit_per_kg
+      b.cost_to_prepare / b.glue_separated as cost_per_kg,
+      (b.selling_price_per_kg - b.cost_to_prepare / b.glue_separated) as profit_per_kg
     FROM batches b
-    JOIN batch_costs bc ON b.id = bc.batch_id
     LEFT JOIN sales s ON b.id = s.batch_id
     WHERE b.production_date >= date('now', '-90 days')
-    GROUP BY b.selling_price_per_kg, bc.total_cost / b.glue_separated
+    GROUP BY b.selling_price_per_kg, b.cost_to_prepare / b.glue_separated
     HAVING sales_count > 0
   `;
   
@@ -410,11 +409,9 @@ app.get('/api/smart/quality-prediction', (req, res) => {
       b.latex_quantity,
       b.glue_separated,
       b.glue_separated / b.latex_quantity as conversion_rate,
-      bc.chemical_cost,
-      bc.total_cost,
+      b.cost_to_prepare as total_cost,
       (SELECT COUNT(*) FROM returns r JOIN sales s ON r.sale_id = s.id WHERE s.batch_id = b.id) as return_count
     FROM batches b
-    JOIN batch_costs bc ON b.id = bc.batch_id
     WHERE b.production_date >= date('now', '-90 days')
     ORDER BY b.production_date DESC
   `;
