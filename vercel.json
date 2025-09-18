@@ -1,9 +1,21 @@
 {
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
     }
   ],
-  "outputDirectory": "."
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://rubber-glue-api.onrender.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/client/build/$1"
+    }
+  ]
 }
