@@ -956,9 +956,12 @@ app.get('/api/monthly-costs', (req, res) => {
 app.post('/api/monthly-costs', (req, res) => {
   const { month_year, labour_cost, other_costs } = req.body;
   
-  db.run(`INSERT OR REPLACE INTO monthly_costs 
+  db.run(`INSERT INTO monthly_costs 
           (month_year, labour_cost, other_costs)
-          VALUES (?, ?, ?)`,
+          VALUES ($1, $2, $3)
+          ON CONFLICT (month_year) DO UPDATE SET
+          labour_cost = EXCLUDED.labour_cost,
+          other_costs = EXCLUDED.other_costs`,
     [month_year, labour_cost, other_costs || 0],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -981,7 +984,7 @@ app.post('/api/latex-transport', (req, res) => {
   
   db.run(`INSERT INTO latex_transport 
           (transport_date, total_cans, total_latex_kg, transport_cost, cost_per_kg, notes)
-          VALUES (?, ?, ?, ?, ?, ?)`,
+          VALUES ($1, $2, $3, $4, $5, $6)`,
     [transport_date, total_cans, total_latex_kg, transport_cost, cost_per_kg, notes || ''],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -996,7 +999,7 @@ app.post('/api/calculate-batch-cost', (req, res) => {
   // Get monthly costs for the production month
   const monthYear = production_date.substring(0, 7); // YYYY-MM
   
-  db.get('SELECT * FROM monthly_costs WHERE month_year = ?', [monthYear], (err, monthlyCosts) => {
+  db.get('SELECT * FROM monthly_costs WHERE month_year = $1', [monthYear], (err, monthlyCosts) => {
     if (err) return res.status(500).json({ error: err.message });
     
     if (!monthlyCosts) {
@@ -1020,7 +1023,7 @@ app.post('/api/calculate-batch-cost', (req, res) => {
       };
       
       // Get chemical costs
-      db.all('SELECT * FROM chemical_inventory', (err, chemicals) => {
+      db.all('SELECT * FROM chemical_inventory', [], (err, chemicals) => {
         if (err) return res.status(500).json({ error: err.message });
         
         let totalChemicalCost = 0;
@@ -1041,6 +1044,22 @@ app.post('/api/calculate-batch-cost', (req, res) => {
         
         // Calculate costs
         const dailyLabour = monthlyCosts.labour_cost / 30;
+        const transportCost = latex_quantity * transportCostPerKg;
+        const totalCost = totalChemicalCost + dailyLabour + transportCost;
+        
+        res.json({
+          totalCost: totalCost.toFixed(2),
+          breakdown: {
+            chemicals: totalChemicalCost.toFixed(2),
+            labour: dailyLabour.toFixed(2),
+            transport: transportCost.toFixed(2)
+          },
+          chemicalBreakdown
+        });
+      });
+    });
+  });
+});
         const transportationCost = latex_quantity * transportCostPerKg;
         
         const batchCosts = {
