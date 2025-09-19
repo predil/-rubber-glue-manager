@@ -929,7 +929,7 @@ app.post('/api/chemicals', (req, res) => {
   
   db.run(`INSERT INTO chemical_inventory 
           (chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, remaining_quantity)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, quantity_purchased],
     function(err) {
       if (err) {
@@ -943,7 +943,7 @@ app.post('/api/chemicals', (req, res) => {
 });
 
 app.get('/api/monthly-costs', (req, res) => {
-  db.all('SELECT * FROM monthly_costs ORDER BY month_year DESC', (err, rows) => {
+  db.all('SELECT * FROM monthly_costs ORDER BY month_year DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -964,7 +964,7 @@ app.post('/api/monthly-costs', (req, res) => {
 });
 
 app.get('/api/latex-transport', (req, res) => {
-  db.all('SELECT * FROM latex_transport ORDER BY transport_date DESC', (err, rows) => {
+  db.all('SELECT * FROM latex_transport ORDER BY transport_date DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
