@@ -921,15 +921,22 @@ app.get('/api/chemicals/low-stock', (req, res) => {
 });
 
 app.post('/api/chemicals', (req, res) => {
+  console.log('🧪 Adding chemical:', req.body);
   const { chemical_name, purchase_date, quantity_purchased, unit, total_cost } = req.body;
   const cost_per_unit = total_cost / quantity_purchased;
+  
+  console.log('💰 Calculated cost_per_unit:', cost_per_unit);
   
   db.run(`INSERT INTO chemical_inventory 
           (chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, remaining_quantity)
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [chemical_name, purchase_date, quantity_purchased, unit, total_cost, cost_per_unit, quantity_purchased],
     function(err) {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        console.error('❌ Insert error:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log('✅ Chemical added with ID:', this.lastID);
       res.json({ id: this.lastID, message: 'Chemical added successfully' });
     }
   );
