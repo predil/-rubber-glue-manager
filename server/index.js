@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({
   origin: [
+    'https://client-4dqqic9uq-predils-projects.vercel.app',
     'https://client-erh86i2s3-predils-projects.vercel.app',
-    'https://client-5xcx4la46-predils-projects.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true,
