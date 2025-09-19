@@ -15,7 +15,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: true,
+  origin: [
+    'https://client-istz4obp8-predils-projects.vercel.app',
+    'https://client-7hta8c7x5-predils-projects.vercel.app',
+    'http://localhost:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -62,14 +66,20 @@ const users = {
 
 // LOGIN ROUTE
 app.post('/api/login', (req, res) => {
+  console.log('Login attempt:', req.body);
   const { username, password } = req.body;
   
+  console.log('Available users:', Object.keys(users));
+  console.log('Checking:', username, password);
+  
   if (users[username] && users[username] === password) {
+    console.log('Login successful for:', username);
     res.json({ 
       token: 'demo-token-' + username,
       user: { username }
     });
   } else {
+    console.log('Login failed for:', username);
     res.status(401).json({ message: 'Invalid credentials' });
   }
 });
