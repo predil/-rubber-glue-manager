@@ -82,7 +82,7 @@ app.post('/api/login', (req, res) => {
 
 // BATCHES ROUTES
 app.get('/api/batches', (req, res) => {
-  db.all('SELECT * FROM batches ORDER BY batch_number DESC', (err, rows) => {
+  db.all('SELECT * FROM batches ORDER BY batch_number DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -150,7 +150,7 @@ app.delete('/api/batches/:id', (req, res) => {
 
 // CUSTOMERS ROUTES
 app.get('/api/customers', (req, res) => {
-  db.all('SELECT * FROM customers ORDER BY name', (err, rows) => {
+  db.all('SELECT * FROM customers ORDER BY name', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -180,7 +180,7 @@ app.get('/api/sales', (req, res) => {
     ORDER BY s.sale_date DESC
   `;
   
-  db.all(query, (err, rows) => {
+  db.all(query, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
