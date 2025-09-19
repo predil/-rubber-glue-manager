@@ -111,7 +111,7 @@ app.post('/api/batches', (req, res) => {
       Object.keys(chemicalUsage).forEach(chemName => {
         const usedAmount = chemicalUsage[chemName];
         db.run(
-          'UPDATE chemical_inventory SET remaining_quantity = remaining_quantity - ? WHERE chemical_name = ? AND remaining_quantity >= ?',
+          'UPDATE chemical_inventory SET remaining_quantity = remaining_quantity - $1 WHERE chemical_name = $2 AND remaining_quantity >= $3',
           [usedAmount, chemName, usedAmount],
           (err) => {
             if (err) console.error(`Error updating ${chemName}:`, err);
