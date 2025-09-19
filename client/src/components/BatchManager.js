@@ -201,16 +201,16 @@ function BatchManager({ batches, onUpdate }) {
         console.log('Received costs:', costs);
         
         setCostBreakdown({
-          chemical_cost: costs.chemical_cost || 0,
-          transport_cost: costs.transportation_cost || 0,
-          labour_cost: costs.labour_cost || 0,
-          total_cost: costs.total_cost || 0
+          chemical_cost: parseFloat(costs.breakdown?.chemicals || 0),
+          transport_cost: parseFloat(costs.breakdown?.transport || 0),
+          labour_cost: parseFloat(costs.breakdown?.labour || 0),
+          total_cost: parseFloat(costs.totalCost || 0)
         });
         
         // Auto-update the cost_to_prepare field
         setFormData(prev => ({
           ...prev,
-          cost_to_prepare: (costs.total_cost || 0).toFixed(2)
+          cost_to_prepare: costs.totalCost || '0.00'
         }));
       } else {
         const errorText = await response.text();
