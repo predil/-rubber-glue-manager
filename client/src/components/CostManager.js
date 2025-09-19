@@ -278,8 +278,8 @@ function CostManager() {
                     <td>{chemical.purchase_date}</td>
                     <td>{chemical.quantity_purchased} {chemical.unit}</td>
                     <td>{chemical.remaining_quantity} {chemical.unit}</td>
-                    <td className="currency">{parseFloat(chemical.cost_per_unit).toFixed(2)}</td>
-                    <td className="currency">{parseFloat(chemical.total_cost).toLocaleString()}</td>
+                    <td className="currency">{parseFloat(chemical.cost_per_unit || 0).toFixed(2)}</td>
+                    <td className="currency">{parseFloat(chemical.total_cost || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -389,8 +389,8 @@ function CostManager() {
                     <td>{transport.transport_date}</td>
                     <td>{transport.total_cans}</td>
                     <td>{transport.total_latex_kg}</td>
-                    <td className="currency">{parseFloat(transport.transport_cost).toLocaleString()}</td>
-                    <td className="currency">{parseFloat(transport.cost_per_kg).toFixed(2)}</td>
+                    <td className="currency">{parseFloat(transport.transport_cost || 0).toLocaleString()}</td>
+                    <td className="currency">{parseFloat(transport.cost_per_kg || 0).toFixed(2)}</td>
                     <td>{transport.notes || '-'}</td>
                   </tr>
                 ))}
@@ -482,13 +482,13 @@ function CostManager() {
                 {monthlyCosts.map(cost => (
                   <tr key={cost.id}>
                     <td>{cost.month_year}</td>
-                    <td className="currency">{parseFloat(cost.labour_cost).toLocaleString()}</td>
-                    <td className="currency">{parseFloat(cost.other_costs).toLocaleString()}</td>
+                    <td className="currency">{parseFloat(cost.labour_cost || 0).toLocaleString()}</td>
+                    <td className="currency">{parseFloat(cost.other_costs || 0).toLocaleString()}</td>
                     <td className="currency">
-                      {(parseFloat(cost.labour_cost) + parseFloat(cost.other_costs)).toLocaleString()}
+                      {(parseFloat(cost.labour_cost || 0) + parseFloat(cost.other_costs || 0)).toLocaleString()}
                     </td>
                     <td className="currency">
-                      {(parseFloat(cost.labour_cost) / 30).toFixed(2)}
+                      {(parseFloat(cost.labour_cost || 0) / 30).toFixed(2)}
                     </td>
                   </tr>
                 ))}
