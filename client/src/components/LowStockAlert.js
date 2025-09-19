@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 function LowStockAlert() {
   const [lowStockChemicals, setLowStockChemicals] = useState([]);
@@ -13,8 +14,7 @@ function LowStockAlert() {
 
   const fetchLowStock = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/chemicals/low-stock`);
+      const response = await fetch(`${API_URL}/api/chemicals/low-stock`);
       const data = await response.json();
       setLowStockChemicals(data);
       setShowAlert(data.length > 0);
