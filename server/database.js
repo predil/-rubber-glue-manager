@@ -14,16 +14,28 @@ if (process.env.DATABASE_URL) {
   
   db = {
     run: (sql, params = [], callback = () => {}) => {
+      if (typeof params === 'function') {
+        callback = params;
+        params = [];
+      }
       pool.query(sql, params)
         .then(result => callback(null, result))
         .catch(err => callback(err));
     },
     get: (sql, params = [], callback) => {
+      if (typeof params === 'function') {
+        callback = params;
+        params = [];
+      }
       pool.query(sql, params)
         .then(result => callback(null, result.rows[0] || null))
         .catch(err => callback(err));
     },
     all: (sql, params = [], callback) => {
+      if (typeof params === 'function') {
+        callback = params;
+        params = [];
+      }
       pool.query(sql, params)
         .then(result => callback(null, result.rows || []))
         .catch(err => callback(err));
