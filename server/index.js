@@ -888,14 +888,18 @@ app.get('/api/analytics/monthly', (req, res) => {
 
 // COST MANAGEMENT ROUTES
 app.get('/api/chemicals', (req, res) => {
+  console.log('🔍 Chemicals query started');
   db.all(
     'SELECT * FROM chemical_inventory ORDER BY chemical_name',
+    [],
     (err, rows) => {
       if (err) {
-        console.error('DB error:', err);
+        console.error('❌ DB error:', err);
         return res.status(500).json({ error: err.message });
       }
-      res.json(rows);
+      console.log('✅ Query successful, rows:', rows);
+      console.log('📊 Row count:', rows ? rows.length : 0);
+      res.json(rows || []);
     }
   );
 });
