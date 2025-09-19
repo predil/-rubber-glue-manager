@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
+import { API_URL } from './config';
 import Login from './components/Login';
 import BatchManager from './components/BatchManager';
 import CustomerManager from './components/CustomerManager';
@@ -19,37 +20,37 @@ function App() {
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
 
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 
   const fetchBatches = useCallback(async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/batches`);
+      const response = await fetch(`${API_URL}/api/batches`);
       const data = await response.json();
       setBatches(data);
     } catch (error) {
       console.error('Error fetching batches:', error);
     }
-  }, [apiUrl]);
+  }, []);
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/customers`);
+      const response = await fetch(`${API_URL}/api/customers`);
       const data = await response.json();
       setCustomers(data);
     } catch (error) {
       console.error('Error fetching customers:', error);
     }
-  }, [apiUrl]);
+  }, []);
 
   const fetchSales = useCallback(async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/sales`);
+      const response = await fetch(`${API_URL}/api/sales`);
       const data = await response.json();
       setSales(data);
     } catch (error) {
       console.error('Error fetching sales:', error);
     }
-  }, [apiUrl]);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
