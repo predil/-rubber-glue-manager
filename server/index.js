@@ -888,10 +888,16 @@ app.get('/api/analytics/monthly', (req, res) => {
 
 // COST MANAGEMENT ROUTES
 app.get('/api/chemicals', (req, res) => {
-  db.all('SELECT * FROM chemical_inventory ORDER BY chemical_name', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  db.all(
+    'SELECT * FROM chemical_inventory ORDER BY chemical_name',
+    (err, rows) => {
+      if (err) {
+        console.error('DB error:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(rows);
+    }
+  );
 });
 
 app.get('/api/chemicals/low-stock', (req, res) => {
