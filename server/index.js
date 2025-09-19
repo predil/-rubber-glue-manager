@@ -1061,49 +1061,7 @@ app.post('/api/calculate-batch-cost', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-  console.log(`Access from phone: http://[YOUR_PC_IP]:${PORT}`);
-});st
-            };
-          }
-        });
-        
-        // Calculate costs
-        const dailyLabour = monthlyCosts.labour_cost / 30;
-        const transportCost = latex_quantity * transportCostPerKg;
-        const totalCost = totalChemicalCost + dailyLabour + transportCost;
-        
-        res.json({
-          totalCost: totalCost.toFixed(2),
-          breakdown: {
-            chemicals: totalChemicalCost.toFixed(2),
-            labour: dailyLabour.toFixed(2),
-            transport: transportCost.toFixed(2)
-          },
-          chemicalBreakdown
-        });
-      });
-    });
-  });
-});
-        const transportationCost = latex_quantity * transportCostPerKg;
-        
-        const batchCosts = {
-          labour_cost: dailyLabour,
-          transportation_cost: transportationCost,
-          chemical_cost: totalChemicalCost,
-          total_cost: dailyLabour + transportationCost + totalChemicalCost,
-          chemical_breakdown: chemicalBreakdown,
-          transport_per_kg: transportCostPerKg
-        };
-        
-        res.json(batchCosts);
-      });
-    });
-  });
-});
+
 
 // COMPANY SETTINGS ROUTES
 app.get('/api/settings', (req, res) => {
