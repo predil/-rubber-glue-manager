@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getCurrentDate } from '../utils/dateUtils';
 
 function SalesManager({ sales, batches, customers, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
@@ -7,7 +8,7 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
     customer_id: '',
     quantity_sold: '',
     price_per_kg: '',
-    sale_date: new Date().toISOString().split('T')[0]
+    sale_date: getCurrentDate()
   });
 
   const handleSubmit = async (e) => {
@@ -25,7 +26,7 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
         customer_id: '',
         quantity_sold: '',
         price_per_kg: '',
-        sale_date: new Date().toISOString().split('T')[0]
+        sale_date: getCurrentDate()
       });
       setShowForm(false);
       onUpdate();

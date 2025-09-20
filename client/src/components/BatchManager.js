@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDateForInput, getCurrentDate, parseDate } from '../utils/dateUtils';
 
 function BatchManager({ batches, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
@@ -6,7 +7,7 @@ function BatchManager({ batches, onUpdate }) {
   const [formData, setFormData] = useState({
     latex_quantity: '',
     glue_separated: '',
-    production_date: new Date().toISOString().split('T')[0],
+    production_date: getCurrentDate(),
     cost_to_prepare: '',
     selling_price_per_kg: '',
     notes: ''
@@ -60,7 +61,7 @@ function BatchManager({ batches, onUpdate }) {
     setFormData({
       latex_quantity: batch.latex_quantity,
       glue_separated: batch.glue_separated,
-      production_date: batch.production_date,
+      production_date: formatDateForInput(batch.production_date),
       cost_to_prepare: batch.cost_to_prepare,
       selling_price_per_kg: batch.selling_price_per_kg,
       notes: batch.notes || ''
@@ -85,7 +86,7 @@ function BatchManager({ batches, onUpdate }) {
     setFormData({
       latex_quantity: '',
       glue_separated: '',
-      production_date: new Date().toISOString().split('T')[0],
+      production_date: getCurrentDate(),
       cost_to_prepare: '',
       selling_price_per_kg: '',
       notes: ''

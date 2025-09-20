@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
+import { getCurrentDate } from '../utils/dateUtils';
 
 function CostManager() {
   const [activeSection, setActiveSection] = useState('chemicals');
@@ -12,7 +13,7 @@ function CostManager() {
   
   const [chemicalForm, setChemicalForm] = useState({
     chemical_name: '',
-    purchase_date: new Date().toISOString().split('T')[0],
+    purchase_date: getCurrentDate(),
     quantity_purchased: '',
     unit: 'kg',
     total_cost: ''
@@ -25,7 +26,7 @@ function CostManager() {
   });
   
   const [transportForm, setTransportForm] = useState({
-    transport_date: new Date().toISOString().split('T')[0],
+    transport_date: getCurrentDate(),
     total_cans: '',
     transport_cost: '',
     notes: ''
@@ -79,7 +80,7 @@ function CostManager() {
       
       setChemicalForm({
         chemical_name: '',
-        purchase_date: new Date().toISOString().split('T')[0],
+        purchase_date: getCurrentDate(),
         quantity_purchased: '',
         unit: 'kg',
         total_cost: ''
@@ -128,7 +129,7 @@ function CostManager() {
       });
       
       setTransportForm({
-        transport_date: new Date().toISOString().split('T')[0],
+        transport_date: getCurrentDate(),
         total_cans: '',
         transport_cost: '',
         notes: ''

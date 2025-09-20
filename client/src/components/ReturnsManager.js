@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { getCurrentDate } from '../utils/dateUtils';
 
 function ReturnsManager({ sales, onUpdate }) {
   const [returns, setReturns] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     sale_id: '',
-    return_date: new Date().toISOString().split('T')[0],
+    return_date: getCurrentDate(),
     quantity_returned: '',
     reason: ''
   });
@@ -46,7 +47,7 @@ function ReturnsManager({ sales, onUpdate }) {
       
       setFormData({
         sale_id: '',
-        return_date: new Date().toISOString().split('T')[0],
+        return_date: getCurrentDate(),
         quantity_returned: '',
         reason: ''
       });
