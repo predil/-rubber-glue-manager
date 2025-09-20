@@ -112,42 +112,60 @@ Thank you for your business!
 ================================
     `;
     
-    // Create printable window
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Invoice #${sale.id.toString().padStart(4, '0')}</title>
-          <style>
-            body {
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-              line-height: 1.2;
-              margin: 0;
-              padding: 10px;
-              width: 58mm;
-              background: white;
-            }
-            .bill {
-              white-space: pre-line;
-            }
-            @media print {
-              body { margin: 0; padding: 5px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="bill">${billContent}</div>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => window.close(), 1000);
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    // Mobile-friendly print approach
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // For mobile: create a blob and download as text file
+      const blob = new Blob([billContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${sale.id.toString().padStart(4, '0')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      // Desktop: use window.open for printing
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Invoice #${sale.id.toString().padStart(4, '0')}</title>
+              <style>
+                body {
+                  font-family: 'Courier New', monospace;
+                  font-size: 12px;
+                  line-height: 1.2;
+                  margin: 0;
+                  padding: 10px;
+                  width: 58mm;
+                  background: white;
+                }
+                .bill {
+                  white-space: pre-line;
+                }
+                @media print {
+                  body { margin: 0; padding: 5px; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="bill">${billContent}</div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  setTimeout(() => window.close(), 1000);
+                }
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    }
   };
 
   return (
