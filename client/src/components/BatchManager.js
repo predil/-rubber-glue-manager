@@ -533,7 +533,7 @@ function BatchManager({ batches, onUpdate }) {
             return (
               <tr key={batch.id}>
                 <td>#{batch.batch_number}</td>
-                <td>{batch.production_date}</td>
+                <td>{new Date(batch.production_date).toLocaleDateString('en-GB')}</td>
                 <td>{batch.latex_quantity}</td>
                 <td>{batch.glue_separated}</td>
                 <td style={{ 

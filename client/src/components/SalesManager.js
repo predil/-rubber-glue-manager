@@ -78,38 +78,19 @@ function SalesManager({ sales, batches, customers, onUpdate }) {
       console.error('Error fetching settings:', error);
     }
     
-    const billContent = `
-================================
-      ${companySettings.company_name.toUpperCase()}
-         INVOICE
-================================
+    const billContent = `${companySettings.company_name.toUpperCase()}
+INVOICE #${sale.id.toString().padStart(4, '0')}
+${companySettings.phone ? companySettings.phone + '\n' : ''}Date: ${new Date(sale.sale_date).toLocaleDateString('en-GB')}
 
-${companySettings.address ? companySettings.address + '\n' : ''}${companySettings.phone ? 'Phone: ' + companySettings.phone + '\n' : ''}${companySettings.email ? 'Email: ' + companySettings.email + '\n' : ''}
---------------------------------
-Date: ${sale.sale_date}
-Invoice #: ${sale.id.toString().padStart(4, '0')}
-
---------------------------------
-CUSTOMER DETAILS:
-${customer ? customer.name : 'N/A'}
-${customer ? customer.contact_info : ''}
-
---------------------------------
-PRODUCT DETAILS:
-Batch #: ${sale.batch_number}
-Production: ${batch ? batch.production_date : 'N/A'}
-
+Customer: ${customer ? customer.name : 'N/A'}
+${customer && customer.contact_info ? customer.contact_info + '\n' : ''}
+Batch #${sale.batch_number}
 Rubber Latex Glue
-Quantity: ${sale.quantity_sold} kg
-Price/kg: LKR ${sale.price_per_kg}
+Qty: ${sale.quantity_sold} kg @ LKR ${sale.price_per_kg}
 
---------------------------------
-TOTAL AMOUNT: LKR ${sale.total_amount.toLocaleString()}
+TOTAL: LKR ${sale.total_amount.toLocaleString()}
 
---------------------------------
-Thank you for your business!
-
-================================
+Thank you!
     `;
     
     // Mobile-friendly print approach
@@ -146,6 +127,8 @@ Thank you for your business!
                 }
                 .bill {
                   white-space: pre-line;
+                  text-align: left;
+                  margin-left: 3mm;
                 }
                 @media print {
                   body { margin: 0; padding: 5px; }
@@ -282,7 +265,7 @@ Thank you for your business!
         <tbody>
           {sales.map(sale => (
             <tr key={sale.id}>
-              <td>{sale.sale_date}</td>
+              <td>{new Date(sale.sale_date).toLocaleDateString('en-GB')}</td>
               <td>#{sale.batch_number}</td>
               <td>{sale.customer_name}</td>
               <td>{sale.quantity_sold}</td>
